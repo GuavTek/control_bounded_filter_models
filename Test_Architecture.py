@@ -1,13 +1,14 @@
 import csv
 import numpy as np
 import matplotlib as mpl
-import enum
+import os
 from matplotlib import pyplot as plt
 from scipy import signal
 
 typeLabel = '32bit'
 floatType = np.float32
 complexType = np.complex64
+# For 16bit set complexType = complex
 
 signalLength = 16384
 N = 3
@@ -476,9 +477,21 @@ def RunSNRParallell(top, step):
 	plt.grid(True)
 	plt.savefig("plots_" + typeLabel + "/SNR_Parallel_" + typeLabel)
 
+def DirectoryCheck():
+	path = os.path.realpath(__file__)
+	pathLabel = "plots_" + typeLabel
+	path64 = "plots_64bit"
+	if not os.path.isdir(pathLabel):
+		print("making directory: " + pathLabel)
+		os.mkdir(pathLabel)
+	if not os.path.isdir(path64):
+		print("making directory: " + path64)
+		os.mkdir(path64)
 
-RunGolden(0)
-RunGolden(1)
+DirectoryCheck()
+
+#RunGolden(0)
+#RunGolden(1)
 
 RunBatchTest(32768)
 RunSNRBatch(513, 16)
