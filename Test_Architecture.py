@@ -389,7 +389,7 @@ def RunBatchTest(buff):
 	plt.close()
 	return SNR
 
-# Run online parallel test and generate figure
+# Run online FIIR test and generate figure
 def RunFIIRTest(lookahead):
 	global u_par
 	u_par = np.zeros(signalLength, floatType)
@@ -425,11 +425,11 @@ def RunGolden(mode):
 		GoldenParallel()
 		plt.figure(figsize=(10,8))
 		plt.subplot(2,1,1)
-		PlotWave(u_gold, 1536, "Offline FIIR algorithm")
+		PlotWave(u_gold, 1536, "Offline Parallel algorithm")
 		plt.subplot(2,1,2)
 		SNR = PlotPSD(u_gold, "PSD", 1)
 		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
-		plt.savefig("plots_" + typeLabel + "/GoldenFIIR")
+		plt.savefig("plots_" + typeLabel + "/GoldenParallel")
 
 def RunSNRBatch(top, step):
 	SNR_Batch = []
