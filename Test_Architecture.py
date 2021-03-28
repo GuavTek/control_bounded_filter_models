@@ -10,7 +10,11 @@ floatType = np.float32
 complexType = np.complex64
 # For 16bit set complexType = complex
 
-signalLength = 16384
+# Options for SNR graph
+plotTop = 513
+plotStep = 16
+
+signalLength = 32767
 N = 3
 f_clk = 504e6
 fs = 5e6
@@ -496,10 +500,10 @@ def DirectoryCheck():
 
 DirectoryCheck()
 
-#RunGolden(0)
-#RunGolden(1)
+RunGolden(0)
+RunGolden(1)
 
-RunBatchTest(32768)
-RunSNRBatch(513, 16)
-RunSNRParallell(513, 16)
+#RunBatchTest(32767)
+RunSNRBatch(plotTop, plotStep)
+RunSNRFIIR(plotTop, plotStep)
 
