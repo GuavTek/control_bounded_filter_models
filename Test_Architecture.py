@@ -126,6 +126,7 @@ def GoldenParallel():
 # FIIR online implementation
 # Baking all factors into LUTs so backward recursion is just summing
 def TestFIIR(lookahead):
+	SBuff = np.concatenate(([[0],[0],[0]], S[:, 0:lookahead]), axis=1)
 	Mf = np.zeros(N, complexType)
 	Lbw = np.zeros((N, lookahead), complexType)
 	# Pre-calculate constants
@@ -135,17 +136,22 @@ def TestFIIR(lookahead):
 
 	#k is the current clock cycle
 	for k in range(0, signalLength):
+		# Shift sample buffer
+		for j in range(0, lookahead):
+			SBuff[:, j] = SBuff[:, j+1]
+		# Insert latest sample
+		try:
+			SBuff[:, lookahead] = S[:, k+lookahead]
+		except:
+			SBuff[:, lookahead] = [0,0,0]
+		# Compute
 		for i in range(0, N):
 			#Calculate backward recursion
 			Mb = floatType(0)
-				try:
-					tempS = S[:, k+a+1]
-				except:
-					tempS = np.array([0,0,0])
-				Mb = Mb + (Lbw[i][a] * np.dot(Fb[i,:],tempS)).real
 			for a in range(0, lookahead):
+				Mb = Mb + (Lbw[i][a] * np.dot(Fb[i,:], SBuff[:, a+1])).real
 			#Calculate forward recursion and product
-			Mf[i] = (Lf[i]*Mf[i] + np.dot(Ff[i,:],S[:, k]))
+			Mf[i] = (Lf[i]*Mf[i] + np.dot(Ff[i,:],SBuff[:, 0]))
 			if complexType == complex: Mf = Complex32(Mf)
 			u_par[k] = u_par[k] + Mb + (Wf[i] * Mf[i]).real
 
