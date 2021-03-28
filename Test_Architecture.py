@@ -125,12 +125,12 @@ def GoldenParallel():
 
 # FIIR online implementation
 # Baking all factors into LUTs so backward recursion is just summing
-def TestFIIR(Recursion):
+def TestFIIR(lookahead):
 	Mf = np.zeros(N, complexType)
-	Lbw = np.zeros((N, Recursion), complexType)
+	Lbw = np.zeros((N, lookahead), complexType)
 	# Pre-calculate constants
 	for i in range(0, N):
-		for j in range(0, Recursion):
+		for j in range(0, lookahead):
 			Lbw[i][j] = (Wb[i] * Lb[i]**j)
 
 	#k is the current clock cycle
@@ -138,12 +138,12 @@ def TestFIIR(Recursion):
 		for i in range(0, N):
 			#Calculate backward recursion
 			Mb = floatType(0)
-			for a in range(0, Recursion):
 				try:
 					tempS = S[:, k+a+1]
 				except:
 					tempS = np.array([0,0,0])
 				Mb = Mb + (Lbw[i][a] * np.dot(Fb[i,:],tempS)).real
+			for a in range(0, lookahead):
 			#Calculate forward recursion and product
 			Mf[i] = (Lf[i]*Mf[i] + np.dot(Ff[i,:],S[:, k]))
 			if complexType == complex: Mf = Complex32(Mf)
@@ -201,7 +201,7 @@ def TestBatch(SampleSize):
 		Reg_PreComp = np.array(Reg_Lookahead)
 		Reg_Lookahead = np.array(Reg_Loading)
 
-# Experimental architecture with reversed sample order
+# Experimental architecture with reversed sample order for backward recursion
 # Becomes unstable when a rounding error occurs
 # Which is very common for float numbers
 def TestReverse(testLength):
