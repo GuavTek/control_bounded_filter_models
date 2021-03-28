@@ -418,18 +418,18 @@ def RunGolden(mode):
 		plt.subplot(2,1,1)
 		PlotWave(u_gold, 1536, "Regular offline algorithm")
 		plt.subplot(2,1,2)
-		SNR = PlotPSD(u_gold, "FFT", 1)
+		SNR = PlotPSD(u_gold, "PSD", 1)
 		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
-		plt.savefig("plots_64bit/RegularFFT")
+		plt.savefig("plots_64bit/GoldenRegular")
 	else:
 		GoldenParallel()
 		plt.figure(figsize=(10,8))
 		plt.subplot(2,1,1)
-		PlotWave(u_gold, 1536, "Offline parallel algorithm")
+		PlotWave(u_gold, 1536, "Offline FIIR algorithm")
 		plt.subplot(2,1,2)
-		SNR = PlotPSD(u_gold, "FFT", 1)
+		SNR = PlotPSD(u_gold, "PSD", 1)
 		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
-		plt.savefig("plots_" + typeLabel + "/ParallelFFT")
+		plt.savefig("plots_" + typeLabel + "/GoldenFIIR")
 
 def RunSNRBatch(top, step):
 	SNR_Batch = []
