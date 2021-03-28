@@ -1,3 +1,4 @@
 *.png
 .vscode/
 workspace.code-workspace
+data/Coefficients.h
