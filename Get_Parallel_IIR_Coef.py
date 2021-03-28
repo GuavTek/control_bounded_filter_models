@@ -101,7 +101,7 @@ def Write2D (name, data):
 	f.write("};\n\r")
 
 #### Load offline matrices ####
-with open('offline_matrices.csv', newline='') as csvfile:
+with open('data/offline_matrices.csv', newline='') as csvfile:
 	test = csv.reader(csvfile, delimiter=';')
 	targetVar = "0"
 	for line in test:
@@ -130,7 +130,7 @@ with open('offline_matrices.csv', newline='') as csvfile:
 
 sig = []
 #### Load Test-data ####
-with open('control_signals.csv', newline='') as csvfile:
+with open('data/control_signals.csv', newline='') as csvfile:
 	test = csv.reader(csvfile, delimiter=';')
 	for line in test:
 		if(line == []):
