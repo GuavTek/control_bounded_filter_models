@@ -123,9 +123,9 @@ def GoldenParallel():
 			tempSum = tempSum + (Wf[m]*Mf[m, i]).real + (Wb[m]*Mb[m, i]).real
 		u_gold[i] = tempSum
 
-# Parallel online implementation 2
+# FIIR online implementation
 # Baking all factors into LUTs so backward recursion is just summing
-def TestParallel2(Recursion):
+def TestFIIR(Recursion):
 	Mf = np.zeros(N, complexType)
 	Lbw = np.zeros((N, Recursion), complexType)
 	# Pre-calculate constants
@@ -373,26 +373,26 @@ def RunBatchTest(buff):
 	PlotWave(u_bat, 1536, "Waveform with buffer size " + str(buff))
 
 	plt.subplot(2,1,2)
-	SNR = PlotPSD(u_bat, "FFT for buffer size " + str(buff), 1)
-	plt.figtext(0.7, 0.4, "SNR = " + ('%.2f' % SNR) + "dB")
+	SNR = PlotPSD(u_bat, "PSD for buffer size " + str(buff), 1)
+	plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 	plt.savefig(("plots_" + typeLabel + "/BatchPlot_" + str(buff)))
 	plt.close()
 	return SNR
 
 # Run online parallel test and generate figure
-def RunParaTest(buff):
+def RunFIIRTest(lookahead):
 	global u_par
 	u_par = np.zeros(signalLength, floatType)
-	TestParallel2(buff)
+	TestFIIR(lookahead)
 	#u_par = BIQ_10(u_par)
 	plt.figure(figsize=(10, 8))
 	plt.subplot(2,1,1)
-	PlotWave(u_par, 1536, "Waveform with " + str(buff) + " recursion stages")
+	PlotWave(u_par, 1536, "Waveform with lookahead length: " + str(lookahead))
 
 	plt.subplot(2,1,2)
-	SNR = PlotPSD(u_par, "FFT for " + str(buff) + " recursion stages", 1)
-	plt.figtext(0.7, 0.4, "SNR = " + ('%.2f' % SNR) + "dB")
-	plt.savefig(("plots_" + typeLabel + "/ParPlot_" + str(buff)))
+	SNR = PlotPSD(u_par, "PSD for lookahead length: " + str(lookahead), 1)
+	plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
+	plt.savefig(("plots_" + typeLabel + "/FIIRPlot_" + str(lookahead)))
 	plt.close()
 	return SNR
 
@@ -409,7 +409,7 @@ def RunGolden(mode):
 		PlotWave(u_gold, 1536, "Regular offline algorithm")
 		plt.subplot(2,1,2)
 		SNR = PlotPSD(u_gold, "FFT", 1)
-		plt.figtext(0.7, 0.4, "SNR = " + ('%.2f' % SNR) + "dB")
+		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 		plt.savefig("plots_64bit/RegularFFT")
 	else:
 		GoldenParallel()
@@ -418,7 +418,7 @@ def RunGolden(mode):
 		PlotWave(u_gold, 1536, "Offline parallel algorithm")
 		plt.subplot(2,1,2)
 		SNR = PlotPSD(u_gold, "FFT", 1)
-		plt.figtext(0.7, 0.4, "SNR = " + ('%.2f' % SNR) + "dB")
+		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 		plt.savefig("plots_" + typeLabel + "/ParallelFFT")
 
 def RunSNRBatch(top, step):
@@ -445,17 +445,17 @@ def RunSNRBatch(top, step):
 	plt.ylabel("SNR - dB")
 	plt.minorticks_off()
 	plt.xticks(x, xdisp, rotation=45)
-	plt.figtext(0.6, 0.85, "Peak is " + ('%.2f' % peak) + "dB with buffer size = " + str(int(x[where])))
+	plt.figtext(0.13, 0.85, "Peak is " + ('%.2f' % peak) + "dB with buffer size = " + str(int(x[where])))
 	plt.grid(True)
 	plt.savefig("plots_" + typeLabel + "/SNR_Batch_" + typeLabel)
 
-def RunSNRParallell(top, step):
-	SNR_Para = []
+def RunSNRFIIR(top, step):
+	SNR_FIIR = []
 	# Run simulations
 	x = np.arange(16, top, step)
 	for langth in x:
-		print("Testing parallel with parameter " + str(langth) + "...")
-		SNR_Para.append(RunParaTest(langth))
+		print("Testing FIIR with lookahead " + str(langth) + "...")
+		SNR_FIIR.append(RunFIIRTest(langth))
 	# Display every 4th tick
 	xdisp = []
 	for i in range(0, x.size):
@@ -464,18 +464,18 @@ def RunSNRParallell(top, step):
 		else:
 			xdisp.append("")
 	# Plot figure
-	peak = np.amax(SNR_Para)
-	where = np.where(SNR_Para == peak)
+	peak = np.amax(SNR_FIIR)
+	where = np.where(SNR_FIIR == peak)
 	plt.figure(figsize=(10,8))
-	plt.plot(x, SNR_Para)
-	plt.title("SNR for parallel achitecture - " + typeLabel)
-	plt.xlabel("Recursion stages")
+	plt.plot(x, SNR_FIIR)
+	plt.title("SNR for FIIR achitecture - " + typeLabel)
+	plt.xlabel("Lookahead length")
 	plt.ylabel("SNR - dB")
 	plt.minorticks_off()
 	plt.xticks(x, xdisp, rotation=45)
-	plt.figtext(0.58, 0.85, "Peak is " + ('%.2f' % peak) + "dB with recursion stages = " + str(int(x[where])))
+	plt.figtext(0.13, 0.85, "Peak is " + ('%.2f' % peak) + "dB with lookahead length = " + str(int(x[where])))
 	plt.grid(True)
-	plt.savefig("plots_" + typeLabel + "/SNR_Parallel_" + typeLabel)
+	plt.savefig("plots_" + typeLabel + "/SNR_FIIR_" + typeLabel)
 
 def DirectoryCheck():
 	path = os.path.realpath(__file__)
