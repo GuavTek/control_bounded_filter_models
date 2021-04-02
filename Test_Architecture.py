@@ -11,7 +11,7 @@ complexType = np.complex64
 # For 16bit set complexType = complex
 
 # Options for SNR graph
-plotTop = 513
+plotTop = 512
 plotStep = 16
 
 signalLength = 32768
@@ -25,6 +25,35 @@ Bf = []
 Bb = []
 W = []
 S = []
+
+def SetBitWidth(width):
+	global typeLabel
+	global floatType
+	global complexType
+	if width == 16:
+		typeLabel = '16bit'
+		floatType = np.float16
+		complexType = complex
+	elif width == 32:
+		typeLabel = '32bit'
+		floatType = np.float32
+		complexType = np.complex64
+	elif width == 64:
+		typeLabel = '64bit'
+		floatType = np.float64
+		complexType = np.complex128
+
+def SetPlotParameters(top, step):
+	global plotTop
+	global plotStep
+	plotTop = top
+	plotStep = step
+
+def SetTestParameters(stimuli_length, system_order):
+	global signalLength
+	global N
+	signalLength = stimuli_length
+	N = system_order
 
 def Complex32(var: complex) -> complex:
 	var.real = np.float16(var.real)
@@ -44,6 +73,18 @@ def ReadFile(fileName):
 		temp.append(tempList)
 	temp = np.array(temp, complexType)
 	if complexType == complex: temp = Complex32(temp)
+	csvfile.close()
+	return temp
+
+def ReadResults(fileName, exp):
+	csvfile = open(fileName, newline='')
+	r = csv.reader(csvfile, delimiter=',')
+	temp = []
+	for num in line:
+		num = num.replace("[", "")
+		num = num.replace("]", "")
+		temp.append(float(num))
+	temp = np.array(temp)
 	csvfile.close()
 	return temp
 
@@ -349,7 +390,7 @@ def PlotWave(arr, length, tit):
 def PlotPSD(arr, tit, sig_leak=0):
 	T = 1.0 / f_clk
 	
-	arr_f, freq = plt.psd(arr[512:-3584], NFFT=signalLength-4096, Fs=f_clk)
+	arr_f, freq = plt.psd(arr[512:-3584], NFFT=arr.size-4096, Fs=f_clk)
 	plt.xscale('log')
 	plt.grid(True)
 
@@ -434,7 +475,7 @@ def RunGolden(mode):
 def RunSNRBatch(top, step):
 	SNR_Batch = []
 	# Simulate
-	x = np.arange(16, top, step)
+	x = np.arange(step, top+1, step)
 	for langth in x:
 		print("Testing batch with parameter " + str(langth) + "...")
 		SNR_Batch.append(RunBatchTest(langth))
@@ -462,7 +503,7 @@ def RunSNRBatch(top, step):
 def RunSNRFIIR(top, step):
 	SNR_FIIR = []
 	# Run simulations
-	x = np.arange(16, top, step)
+	x = np.arange(step, top+1, step)
 	for langth in x:
 		print("Testing FIIR with lookahead " + str(langth) + "...")
 		SNR_FIIR.append(RunFIIRTest(langth))
@@ -497,13 +538,4 @@ def DirectoryCheck():
 	if not os.path.isdir(path64):
 		print("making directory: " + path64)
 		os.mkdir(path64)
-
-DirectoryCheck()
-
-RunGolden(0)
-RunGolden(1)
-
-#RunBatchTest(32767)
-RunSNRBatch(plotTop, plotStep)
-RunSNRFIIR(plotTop, plotStep)
 
