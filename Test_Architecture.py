@@ -80,10 +80,11 @@ def ReadResults(fileName, exp):
 	csvfile = open(fileName, newline='')
 	r = csv.reader(csvfile, delimiter=',')
 	temp = []
-	for num in line:
-		num = num.replace("[", "")
-		num = num.replace("]", "")
-		temp.append(float(num))
+	for line in r:
+		for num in line:
+			num = num.replace("[", "")
+			num = num.replace("]", "")
+			temp.append(float(num)/2**exp)
 	temp = np.array(temp)
 	csvfile.close()
 	return temp

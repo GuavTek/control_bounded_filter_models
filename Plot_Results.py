@@ -6,7 +6,9 @@ arc.SetTestParameters(16384, 3)
 arc.SetPlotParameters(512, 16)
 
 
-res = arc.ReadResults('Results.csv', -14)
+res = arc.ReadResults('Results.csv', 14)
+
+print(res.shape)
 
 plt.figure(figsize=(10, 8))
 plt.subplot(2,1,1)
