@@ -3,3 +3,4 @@
 workspace.code-workspace
 data/Coefficients.h
 env/
+__Pycache__/
