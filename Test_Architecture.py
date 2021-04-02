@@ -385,13 +385,13 @@ def PlotWave(arr, length, tit):
 	plt.title(tit)
 	plt.xlabel("time k")
 	plt.ylabel("result u")
-	plt.plot(k, arr[:length])
+	plt.plot(k, arr[1536:1536+length])
 
 # Plot the PSD and return SNR
 def PlotPSD(arr, tit, sig_leak=0):
 	T = 1.0 / f_clk
 	
-	arr_f, freq = plt.psd(arr[512:-3584], NFFT=arr.size-4096, Fs=f_clk)
+	arr_f, freq = plt.psd(arr[512:-3584], NFFT=signalLength-4096, Fs=f_clk)
 	plt.xscale('log')
 	plt.grid(True)
 

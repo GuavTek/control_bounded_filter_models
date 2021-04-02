@@ -2,11 +2,11 @@ import Test_Architecture as arc
 from matplotlib import pyplot as plt
 
 arc.SetBitWidth(32)
-arc.SetTestParameters(16384, 3)
+arc.SetTestParameters(32768, 3)
 arc.SetPlotParameters(512, 16)
 
 
-res = arc.ReadResults('Results.csv', 14)
+res = arc.ReadResults('Results.csv', 0)
 
 print(res.shape)
 
