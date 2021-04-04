@@ -5,5 +5,5 @@ Using the models:</p>
 <ol>
 <li>Add offline matrices and control-signals to data folder</li>
 <li>Run Get_Parallel_IIR_Coef.py to generate coefficients</li>
-<li>Run Test_Architecture.py to run tests and generate graphs</li>
+<li>Run Run_tests.py to run tests and generate graphs</li>
 </ol>
