@@ -20,6 +20,7 @@ def WriteFile (name, data):
 def WriteHeader (length):
 	global f
 	f = open("data/Coefficients.h", 'w')
+	f.write('#include "FloatType.h"\n\n')
 	Write1D("Lf", Lf)
 	Write1D("Lb", Lb)
 	Write1D("Wf", Wf)
@@ -33,7 +34,7 @@ def WriteHeader (length):
 		for j in range(0, length):
 			Lbw[i][j] = (Wb[i] * Lb[i]**j)
 	
-	f.write("const float Lbwr[%d][%d] = {\n" %(N,length))
+	f.write("const floatType Lbwr[%d][%d] = {\n" %(N,length))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, length):
@@ -45,7 +46,7 @@ def WriteHeader (length):
 		else:
 			f.write("}")
 	f.write("};\n\r")
-	f.write("const float Lbwi[%d][%d] = {\n" %(N,length))
+	f.write("const floatType Lbwi[%d][%d] = {\n" %(N,length))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, length):
@@ -61,13 +62,13 @@ def WriteHeader (length):
 	f.close()
 
 def Write1D (name, data):
-	f.write("const float " + name + "r[%d] = {" %N)
+	f.write("const floatType " + name + "r[%d] = {" %N)
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
 		f.write(str(data[i].real))
 	f.write("};\n\r")
-	f.write("const float " + name + "i[%d] = {" %N)
+	f.write("const floatType " + name + "i[%d] = {" %N)
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
@@ -75,7 +76,7 @@ def Write1D (name, data):
 	f.write("};\n\r")
 
 def Write2D (name, data):
-	f.write("const float " + name + "r[%d][%d] = {\n" %(N,N))
+	f.write("const floatType " + name + "r[%d][%d] = {\n" %(N,N))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, N):
@@ -87,7 +88,7 @@ def Write2D (name, data):
 		else:
 			f.write("}")
 	f.write("};\n\r")
-	f.write("const float " + name + "i[%d][%d] = {\n" %(N,N))
+	f.write("const floatType " + name + "i[%d][%d] = {\n" %(N,N))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, N):
