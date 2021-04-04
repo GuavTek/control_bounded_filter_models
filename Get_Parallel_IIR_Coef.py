@@ -198,6 +198,6 @@ if (WriteFiles):
 	WriteFile('Fb', Fb)
 	WriteFile('Wf', Wf)
 	WriteFile('Wb', Wb)
-	WriteHeader(128)
+	WriteHeader(256)
 	WriteFile('hardware_signals', hardSig)
 	WriteFile('clean_signals', sig)
