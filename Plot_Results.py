@@ -15,7 +15,7 @@ plt.subplot(2,1,1)
 arc.PlotWave(res, 1536, "Waveform from stratus simulation")
 
 plt.subplot(2,1,2)
-SNR = arc.PlotPSD(res, "PSD for stratus")
+SNR = arc.PlotPSD(res, "PSD for stratus", 1)
 plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 plt.savefig(("StratusPlot_20bit"))
 plt.close()
