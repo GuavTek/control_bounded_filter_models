@@ -84,7 +84,10 @@ def ReadResults(fileName, exp):
 		for num in line:
 			num = num.replace("[", "")
 			num = num.replace("]", "")
+			#try:
 			temp.append(float(num)/2**exp)
+			#except:
+			#	print(num)
 	temp = np.array(temp)
 	csvfile.close()
 	return temp
@@ -203,6 +206,7 @@ def TestFIIR(lookahead):
 
 # Online batch architecture
 def TestBatch(SampleSize):
+	tempRes = np.zeros(signalLength, floatType)
 	Reg_Loading = np.zeros((N,SampleSize), floatType)
 	Reg_Lookahead = np.zeros((N,SampleSize), floatType)
 	M_LH = np.zeros(N, complexType)
@@ -243,7 +247,7 @@ def TestBatch(SampleSize):
 				# Output stage
 				k_delayed = k - 4*SampleSize
 				if ((k_delayed >= 0) and (k_delayed+i < signalLength)):
-					u_bat[k_delayed+i] = u_bat[k_delayed+i] + Reg_ResultB[n, i] + Reg_ResultF[n, i]
+					tempRes[k_delayed+i] = tempRes[k_delayed+i] + Reg_ResultB[n, i] + Reg_ResultF[n, i]
 		# Propagate registers
 		Reg_ResultF = np.array(Reg_PartResultF)
 		Reg_ResultB = np.array(Reg_PartResultB)
@@ -252,6 +256,7 @@ def TestBatch(SampleSize):
 		Reg_Compute = np.array(Reg_PreComp)
 		Reg_PreComp = np.array(Reg_Lookahead)
 		Reg_Lookahead = np.array(Reg_Loading)
+	return tempRes
 
 # Experimental architecture with reversed sample order for backward recursion
 # Becomes unstable when a rounding error occurs
@@ -385,7 +390,7 @@ def PlotWave(arr, length, tit):
 	plt.title(tit)
 	plt.xlabel("time k")
 	plt.ylabel("result u")
-	plt.plot(k, arr[2048:2048+length])
+	plt.plot(k, arr[:length])
 
 # Plot the PSD and return SNR
 def PlotPSD(arr, tit, sig_leak=0):
@@ -416,9 +421,7 @@ def PlotPSD(arr, tit, sig_leak=0):
 
 # Run online batch test and generate figure
 def RunBatchTest(buff):
-	global u_bat
-	u_bat = np.zeros(signalLength, floatType)
-	TestBatch(buff)
+	u_bat = TestBatch(buff)
 	#u_bat = BIQ_10(u_bat)
 	plt.figure(figsize=(10, 8))
 	plt.subplot(2,1,1)
