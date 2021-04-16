@@ -2,7 +2,8 @@ import csv
 import numpy as np
 import scipy.linalg as la
 
-WriteFiles = 1
+WriteFiles = 0
+WriteHeader = 1
 N = 3
 
 Af = []
@@ -16,6 +17,18 @@ def WriteFile (name, data):
 	fileWriter = csv.writer(CSVfile, delimiter=';')
 	fileWriter.writerows(map(lambda x: [x], data))
 	CSVfile.close()
+
+def WriteVerilog():
+	global f
+	f = open("data/Coefficients.v", 'w')
+	WriteVerilog1D("Lf", Lf)
+	WriteVerilog1D("Lb", Lb)
+	WriteVerilog1D("Wf", Wf)
+	WriteVerilog1D("Wb", Wb)
+	WriteVerilog2D("Ff", Ff)
+	WriteVerilog2D("Fb", Fb)
+	f.write("\n\r")
+	f.close()
 
 def WriteHeader (length):
 	global f
@@ -75,6 +88,20 @@ def Write1D (name, data):
 		f.write(str(data[i].imag))
 	f.write("};\n\r")
 
+def WriteVerilog1D (name, data):
+	f.write("const real " + name + "r[%d:0] = {" %(N-1))
+	for i in range(0, N):
+		if (i > 0):
+			f.write(", ")
+		f.write(str(data[i].real))
+	f.write("};\n\r")
+	f.write("const real " + name + "i[%d:0] = {" %(N-1))
+	for i in range(0, N):
+		if (i > 0):
+			f.write(", ")
+		f.write(str(data[i].imag))
+	f.write("};\n\r")
+
 def Write2D (name, data):
 	f.write("const floatType " + name + "r[%d][%d] = {\n" %(N,N))
 	for i in range(0, N):
@@ -89,6 +116,32 @@ def Write2D (name, data):
 			f.write("}")
 	f.write("};\n\r")
 	f.write("const floatType " + name + "i[%d][%d] = {\n" %(N,N))
+	for i in range(0, N):
+		f.write("\t{")
+		for j in range(0, N):
+			if (j > 0):
+				f.write(", ")
+			f.write(str(data[i][j].imag))
+		if (i < N-1):
+			f.write("},\n")
+		else:
+			f.write("}")
+	f.write("};\n\r")
+
+def WriteVerilog2D (name, data):
+	f.write("const real " + name + "r[%d:0][%d:0] = {\n" %((N-1),(N-1)))
+	for i in range(0, N):
+		f.write("\t{")
+		for j in range(0, N):
+			if (j > 0):
+				f.write(", ")
+			f.write(str(data[i][j].real))
+		if (i < N-1):
+			f.write("},\n")
+		else:
+			f.write("}")
+	f.write("};\n\r")
+	f.write("const real " + name + "i[%d:0][%d:0] = {\n" %((N-1),(N-1)))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, N):
@@ -198,6 +251,9 @@ if (WriteFiles):
 	WriteFile('Fb', Fb)
 	WriteFile('Wf', Wf)
 	WriteFile('Wb', Wb)
-	WriteHeader(256)
 	WriteFile('hardware_signals', hardSig)
 	WriteFile('clean_signals', sig)
+
+if (WriteHeader):
+	WriteHeader(256)
+	WriteVerilog()
