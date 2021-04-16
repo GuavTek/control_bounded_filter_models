@@ -89,13 +89,13 @@ def Write1D (name, data):
 	f.write("};\n\r")
 
 def WriteVerilog1D (name, data):
-	f.write("const real " + name + "r[%d-1:0] = {" %N)
+	f.write("const real " + name + "r[%d:0] = {" %(N-1))
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
 		f.write(str(data[i].real))
 	f.write("};\n\r")
-	f.write("const real " + name + "i[%d-1:0] = {" %N)
+	f.write("const real " + name + "i[%d:0] = {" %(N-1))
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
@@ -129,7 +129,7 @@ def Write2D (name, data):
 	f.write("};\n\r")
 
 def WriteVerilog2D (name, data):
-	f.write("const real " + name + "r[%d-1:0][%d-1:0] = {\n" %(N,N))
+	f.write("const real " + name + "r[%d:0][%d:0] = {\n" %((N-1),(N-1)))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, N):
@@ -141,7 +141,7 @@ def WriteVerilog2D (name, data):
 		else:
 			f.write("}")
 	f.write("};\n\r")
-	f.write("const real " + name + "i[%d-1:0][%d-1:0] = {\n" %(N,N))
+	f.write("const real " + name + "i[%d:0][%d:0] = {\n" %((N-1),(N-1)))
 	for i in range(0, N):
 		f.write("\t{")
 		for j in range(0, N):
