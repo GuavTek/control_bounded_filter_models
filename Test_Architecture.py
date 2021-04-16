@@ -85,6 +85,8 @@ def ReadResults(fileName, exp):
 			num = num.replace("[", "")
 			num = num.replace("]", "")
 			temp.append(float(num)/2**exp)
+	while (len(temp) < signalLength):
+		temp.append(0.0)
 	temp = np.array(temp)
 	csvfile.close()
 	return temp
