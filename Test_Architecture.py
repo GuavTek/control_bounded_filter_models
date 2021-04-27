@@ -4,6 +4,7 @@ import matplotlib as mpl
 import os
 from matplotlib import pyplot as plt
 from scipy import signal
+import fixedpoint as fp
 
 typeLabel = '32bit'
 floatType = np.float32
