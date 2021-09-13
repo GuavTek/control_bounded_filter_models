@@ -17,7 +17,7 @@ plotStep = 16
 
 signalLength = 32768
 N = 3
-f_clk = 504e6
+f_clk = 500e6
 fs = 5e6
 
 Af = []
