@@ -205,8 +205,9 @@ def TestFIIR(lookahead):
 			u_par[k] = u_par[k] + Mb + (Wf[i] * Mf[i]).real
 
 # Online batch architecture
-def TestBatch(SampleSize):
-	tempRes = np.zeros(signalLength, floatType)
+def TestBatch(SampleSize, DownSampFactor = 1):
+	DownSize = int(round(SampleSize/DownSampFactor))
+	tempRes = np.zeros(int(round(signalLength/DownSampFactor)), floatType)
 	Reg_Loading = np.zeros((N,SampleSize), floatType)
 	Reg_Lookahead = np.zeros((N,SampleSize), floatType)
 	M_LH = np.zeros(N, complexType)
@@ -214,10 +215,10 @@ def TestBatch(SampleSize):
 	Reg_Compute = np.zeros((N,SampleSize), floatType)
 	Mb = np.zeros(N, complexType)
 	Mf = np.zeros(N, complexType)
-	Reg_PartResultB = np.zeros((N,SampleSize), floatType)
-	Reg_PartResultF = np.zeros((N,SampleSize), floatType)
-	Reg_ResultB = np.zeros((N,SampleSize), floatType)
-	Reg_ResultF = np.zeros((N,SampleSize), floatType)
+	Reg_PartResultB = np.zeros((N,DownSize), floatType)
+	Reg_PartResultF = np.zeros((N,DownSize), floatType)
+	Reg_ResultB = np.zeros((N,DownSize), floatType)
+	Reg_ResultF = np.zeros((N,DownSize), floatType)
 	M_DF = np.zeros(N, floatType)
 	M_DB = np.zeros(N, floatType)
 	# Batch cycle
@@ -230,24 +231,38 @@ def TestBatch(SampleSize):
 				Reg_Loading[:,i] = S[:,k+i]
 			except:
 				Reg_Loading[:,i] = np.array([0, 0, 0])
+			# Downsample clock
+			if (i % DownSampFactor != 0):
+				continue
+			id = int(round(i / DownSampFactor))
+			jd = int(np.floor(j / DownSampFactor))
 			# Calculation
 			for n in range(0, N):
 				# Lookahead stage
-				M_LH[n] = (Lb[n] * M_LH[n] + np.dot(Fb[n,:], Reg_Lookahead[:,j]))
+				temp = 0
+				for a in range(0,DownSampFactor):
+					temp += np.dot(Fb[n,:], Reg_Lookahead[:,j-a]) * (Lb[n] ** (DownSampFactor - 1 - a))
+				M_LH[n] = ((Lb[n] ** DownSampFactor) * M_LH[n] + temp)
 				if complexType == complex: M_LH = Complex32(M_LH) 
 				# Forward recursion
-				Mf[n] = (Lf[n] * Mf[n] + np.dot(Ff[n,:], Reg_Compute[:,i]))
+				temp = 0
+				for a in range(0,DownSampFactor):
+					temp += np.dot(Ff[n,:], Reg_Compute[:,i+a]) * (Lf[n] ** (DownSampFactor - 1 - a))
+				Mf[n] = ((Lf[n] ** DownSampFactor) * Mf[n] + temp)
 				if complexType == complex: Mf = Complex32(Mf)
-				Reg_PartResultF[n,i] = M_DF[n]
+				Reg_PartResultF[n,id] = M_DF[n]
 				M_DF[n] = (Wf[n] * Mf[n]).real
 				# Backward Recursion
-				Mb[n] = (Lb[n] * Mb[n] + np.dot(Fb[n,:], Reg_Compute[:,j]))
+				temp = 0
+				for a in range(0,DownSampFactor):
+					temp += np.dot(Fb[n,:], Reg_Compute[:,j-a]) * (Lb[n] ** (DownSampFactor - 1 - a))
+				Mb[n] = ((Lb[n] ** DownSampFactor) * Mb[n] + temp)
 				if complexType == complex: Mb = Complex32(Mb)
-				Reg_PartResultB[n,j] = (Wb[n] * Mb[n]).real
+				Reg_PartResultB[n,jd] = (Wb[n] * Mb[n]).real
 				# Output stage
-				k_delayed = k - 4*SampleSize
-				if ((k_delayed >= 0) and (k_delayed+i < signalLength)):
-					tempRes[k_delayed+i] = tempRes[k_delayed+i] + Reg_ResultB[n, i] + Reg_ResultF[n, i]
+				k_delayed = int(round((k - 4*SampleSize) / DownSampFactor))
+				if ((k_delayed >= 0) and (k_delayed+id < int(round(signalLength/DownSampFactor)))):
+					tempRes[k_delayed+id] = tempRes[k_delayed+id] + Reg_ResultB[n, id] + Reg_ResultF[n, id]
 		# Propagate registers
 		Reg_ResultF = np.array(Reg_PartResultF)
 		Reg_ResultB = np.array(Reg_PartResultB)
@@ -423,17 +438,16 @@ def PlotPSD(arr, tit, freq, sig_leak=0):
 	return SNR
 
 # Run online batch test and generate figure
-def RunBatchTest(buff):
-	u_bat = TestBatch(buff)
-	#u_bat = BIQ_10(u_bat)
+def RunBatchTest(buff, DownSampleFactor = 1):
+	u_bat = TestBatch(buff, DownSampleFactor)
 	plt.figure(figsize=(10, 8))
 	plt.subplot(2,1,1)
-	PlotWave(u_bat, 1536, "Waveform with buffer size " + str(buff))
+	PlotWave(u_bat, int(round(1536 / DownSampleFactor)), "Waveform with buffer size " + str(buff) + ", downsampling factor " + str(DownSampleFactor))
 
 	plt.subplot(2,1,2)
-	SNR = PlotPSD(u_bat, "PSD for buffer size " + str(buff), 1)
+	SNR = PlotPSD(u_bat, "PSD for buffer size " + str(buff) + ", DSF " + str(DownSampleFactor), f_clk / DownSampleFactor, 1)
 	plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
-	plt.savefig(("plots_" + typeLabel + "/BatchPlot_" + str(buff)))
+	plt.savefig(("plots_" + typeLabel + "/BatchPlot_" + str(buff) + "_DSF" + str(DownSampleFactor)))
 	plt.close()
 	return SNR
 
@@ -448,7 +462,7 @@ def RunFIIRTest(lookahead):
 	PlotWave(u_par, 1536, "Waveform with lookahead length: " + str(lookahead))
 
 	plt.subplot(2,1,2)
-	SNR = PlotPSD(u_par, "PSD for lookahead length: " + str(lookahead), 1)
+	SNR = PlotPSD(u_par, "PSD for lookahead length: " + str(lookahead), f_clk, 1)
 	plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 	plt.savefig(("plots_" + typeLabel + "/FIIRPlot_" + str(lookahead)))
 	plt.close()
@@ -466,7 +480,7 @@ def RunGolden(mode):
 		plt.subplot(2,1,1)
 		PlotWave(u_gold, 1536, "Regular offline algorithm")
 		plt.subplot(2,1,2)
-		SNR = PlotPSD(u_gold, "PSD", 1)
+		SNR = PlotPSD(u_gold, "PSD", f_clk, 1)
 		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 		plt.savefig("plots_64bit/GoldenRegular")
 	else:
@@ -475,17 +489,17 @@ def RunGolden(mode):
 		plt.subplot(2,1,1)
 		PlotWave(u_gold, 1536, "Offline Parallel algorithm")
 		plt.subplot(2,1,2)
-		SNR = PlotPSD(u_gold, "PSD", 1)
+		SNR = PlotPSD(u_gold, "PSD", f_clk, 1)
 		plt.figtext(0.13, 0.42, "SNR = " + ('%.2f' % SNR) + "dB")
 		plt.savefig("plots_" + typeLabel + "/GoldenParallel")
 
-def RunSNRBatch(top, step):
+def RunSNRBatch(top, step, DownSampleFactor = 1):
 	SNR_Batch = []
 	# Simulate
 	x = np.arange(step, top+1, step)
 	for langth in x:
 		print("Testing batch with parameter " + str(langth) + "...")
-		SNR_Batch.append(RunBatchTest(langth))
+		SNR_Batch.append(RunBatchTest(langth, DownSampleFactor))
 	# Display every 4th tick
 	xdisp = []
 	for i in range(0, x.size):
@@ -498,14 +512,14 @@ def RunSNRBatch(top, step):
 	where = np.where(SNR_Batch == peak)
 	plt.figure(figsize=(10,8))
 	plt.plot(x, SNR_Batch)
-	plt.title("SNR for batch architecture - " + typeLabel)
+	plt.title("SNR for batch architecture - " + typeLabel + " OSR=" + str(DownSampleFactor))
 	plt.xlabel("Buffer size")
 	plt.ylabel("SNR - dB")
 	plt.minorticks_off()
 	plt.xticks(x, xdisp, rotation=45)
 	plt.figtext(0.13, 0.85, "Peak is " + ('%.2f' % peak) + "dB with buffer size = " + str(int(x[where])))
 	plt.grid(True)
-	plt.savefig("plots_" + typeLabel + "/SNR_Batch_" + typeLabel)
+	plt.savefig("plots_" + typeLabel + "/SNR_Batch_" + typeLabel + "_DSF" + str(DownSampleFactor))
 
 def RunSNRFIIR(top, step):
 	SNR_FIIR = []
