@@ -10,6 +10,7 @@ typeLabel = '32bit'
 floatType = np.float32
 complexType = np.complex64
 # For 16bit set complexType = complex
+qformat = {'signed': True, 'm': 64, 'n': 64, 'overflow': 'wrap', 'rounding': 'down', 'overflow_alert': 'warning'}
 
 # Options for SNR graph
 plotTop = 512
@@ -26,6 +27,10 @@ Bf = []
 Bb = []
 W = []
 S = []
+
+def SetFixedBitWidth(intBits, fracBits):
+	global qformat
+	qformat = {'signed': True, 'm': intBits, 'n': fracBits, 'overflow': 'wrap', 'rounding': 'down', 'overflow_alert': 'warning'}
 
 def SetBitWidth(width):
 	global typeLabel
@@ -220,6 +225,60 @@ def TestBatch(SampleSize):
 	Reg_ResultF = np.zeros((N,SampleSize), floatType)
 	M_DF = np.zeros(N, floatType)
 	M_DB = np.zeros(N, floatType)
+	# Batch cycle
+	for k in range(0, signalLength + 4*SampleSize, SampleSize):
+		# Clock cycle i, everything in loop happens in parallel
+		for i in range(0, SampleSize):
+			j = SampleSize - i - 1
+			# Sample loading
+			try:
+				Reg_Loading[:,i] = S[:,k+i]
+			except:
+				Reg_Loading[:,i] = np.array([0, 0, 0])
+			# Calculation
+			for n in range(0, N):
+				# Lookahead stage
+				M_LH[n] = (Lb[n] * M_LH[n] + np.dot(Fb[n,:], Reg_Lookahead[:,j]))
+				if complexType == complex: M_LH = Complex32(M_LH) 
+				# Forward recursion
+				Mf[n] = (Lf[n] * Mf[n] + np.dot(Ff[n,:], Reg_Compute[:,i]))
+				if complexType == complex: Mf = Complex32(Mf)
+				Reg_PartResultF[n,i] = M_DF[n]
+				M_DF[n] = (Wf[n] * Mf[n]).real
+				# Backward Recursion
+				Mb[n] = (Lb[n] * Mb[n] + np.dot(Fb[n,:], Reg_Compute[:,j]))
+				if complexType == complex: Mb = Complex32(Mb)
+				Reg_PartResultB[n,j] = (Wb[n] * Mb[n]).real
+				# Output stage
+				k_delayed = k - 4*SampleSize
+				if ((k_delayed >= 0) and (k_delayed+i < signalLength)):
+					tempRes[k_delayed+i] = tempRes[k_delayed+i] + Reg_ResultB[n, i] + Reg_ResultF[n, i]
+		# Propagate registers
+		Reg_ResultF = np.array(Reg_PartResultF)
+		Reg_ResultB = np.array(Reg_PartResultB)
+		Mb = np.array(M_LH)
+		M_LH = np.zeros(N, complexType)
+		Reg_Compute = np.array(Reg_PreComp)
+		Reg_PreComp = np.array(Reg_Lookahead)
+		Reg_Lookahead = np.array(Reg_Loading)
+	return tempRes
+
+# Online batch architecture with fixed point numbers
+def TestBatchFixed(SampleSize):
+	tempRes = np.zeros(signalLength, fp.FixedPoint(0, **qformat))
+	Reg_Loading = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Reg_Lookahead = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	M_LH = np.zeros(N, complexType)
+	Reg_PreComp = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Reg_Compute = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Mb = np.zeros(N, complexType)
+	Mf = np.zeros(N, complexType)
+	Reg_PartResultB = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Reg_PartResultF = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Reg_ResultB = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	Reg_ResultF = np.zeros((N,SampleSize), fp.FixedPoint(0, **qformat))
+	M_DF = np.zeros(N, fp.FixedPoint(0, **qformat))
+	M_DB = np.zeros(N, fp.FixedPoint(0, **qformat))
 	# Batch cycle
 	for k in range(0, signalLength + 4*SampleSize, SampleSize):
 		# Clock cycle i, everything in loop happens in parallel
