@@ -4,6 +4,7 @@ import scipy.linalg as la
 
 WriteFiles = 0
 WriteHead = 1
+SignalLength = 32768
 N = 3
 
 Af = []
@@ -16,6 +17,21 @@ def WriteFile (name, data):
 	CSVfile = open('data/' + name + '.csv', 'w', newline='')
 	fileWriter = csv.writer(CSVfile, delimiter=';')
 	fileWriter.writerows(map(lambda x: [x], data))
+	CSVfile.close()
+
+# Write a file which is friendly to the verilog testbench
+def WriteHarderSig(name, data):
+	CSVfile = open('data/' + name + '.csv', 'w', newline='')
+	fileWriter = csv.writer(CSVfile, delimiter=';')
+	for i in range(0, SignalLength):
+		binString = ''
+		try:
+			test = data[0][i]
+		except:
+			break
+		for j in range(0, N):
+			binString += data[j][i]
+		fileWriter.writerow(binString)
 	CSVfile.close()
 
 def WriteVerilog():
