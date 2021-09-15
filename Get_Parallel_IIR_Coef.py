@@ -77,9 +77,9 @@ def WriteVerilog2DExtended (name, data, expData, exponent):
 		for j in range(0,N):
 			for k in range(0,N):
 				tempData[j][i*N + k] = data[j][k] * expData[j]**i
-	f.write("const real " + name + "r[%d:0][%d:0] = {\n" %((N-1),(N*exponent-1)))
+	f.write("const real " + name + "r[%d:0][%d:0] = '{\n" %((N-1),(N*exponent-1)))
 	for i in range(0, N):
-		f.write("\t{")
+		f.write("\t'{")
 		for j in range(0, N*exponent):
 			if (j > 0):
 				f.write(", ")
@@ -89,9 +89,9 @@ def WriteVerilog2DExtended (name, data, expData, exponent):
 		else:
 			f.write("}")
 	f.write("};\n\r")
-	f.write("const real " + name + "i[%d:0][%d:0] = {\n" %((N-1),(N*exponent-1)))
+	f.write("const real " + name + "i[%d:0][%d:0] = '{\n" %((N-1),(N*exponent-1)))
 	for i in range(0, N):
-		f.write("\t{")
+		f.write("\t'{")
 		for j in range(0, N*exponent):
 			if (j > 0):
 				f.write(", ")
