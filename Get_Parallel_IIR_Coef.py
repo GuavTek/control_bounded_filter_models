@@ -21,8 +21,7 @@ def WriteFile (name, data):
 
 # Write a file which is friendly to the verilog testbench
 def WriteHarderSig(name, data):
-	CSVfile = open('data/' + name + '.csv', 'w', newline='')
-	fileWriter = csv.writer(CSVfile, delimiter=';')
+	f = open('data/' + name + '.csv', 'w', newline='')
 	for i in range(0, SignalLength):
 		binString = ''
 		try:
@@ -30,9 +29,10 @@ def WriteHarderSig(name, data):
 		except:
 			break
 		for j in range(0, N):
-			binString += data[j][i]
-		fileWriter.writerow(binString)
-	CSVfile.close()
+			binString = str(data[j][i]) + binString
+		binString = binString + ",\r"
+		f.write(binString)
+	f.close()
 
 def WriteVerilog():
 	global f
@@ -300,6 +300,7 @@ if (WriteFiles):
 	WriteFile('Wf', Wf)
 	WriteFile('Wb', Wb)
 	WriteFile('hardware_signals', hardSig)
+	WriteHarderSig('verilog_signals', hardSig)
 	WriteFile('clean_signals', sig)
 
 if (WriteHead):
