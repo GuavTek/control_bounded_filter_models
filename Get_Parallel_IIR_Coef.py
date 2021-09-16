@@ -36,24 +36,26 @@ def WriteHarderSig(name, data):
 
 def WriteVerilog():
 	global f
-	f = open("data/Coefficients.v", 'w')
+	f = open("data/Coefficients.sv", 'w')
+	f.write("package Coefficients\r\n")
 	WriteVerilog1D("Lf", Lf)
 	WriteVerilog1D("Lb", Lb)
 	WriteVerilog1D("Wf", Wf)
 	WriteVerilog1D("Wb", Wb)
 	WriteVerilog2DExtended("Ff", Ff, Lf, 20)
 	WriteVerilog2DExtended("Fb", Fb, Lb, 20)
+	f.write("\rendpackage")
 	f.write("\n\r")
 	f.close()
 
 def WriteVerilog1D (name, data):
-	f.write("const real " + name + "r[%d:0] = {" %(N-1))
+	f.write("\tlocalparam real " + name + "r[%d:0] = {" %(N-1))
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
 		f.write(str(data[i].real))
 	f.write("};\n\r")
-	f.write("const real " + name + "i[%d:0] = {" %(N-1))
+	f.write("\tlocalparam real " + name + "i[%d:0] = {" %(N-1))
 	for i in range(0, N):
 		if (i > 0):
 			f.write(", ")
@@ -61,9 +63,9 @@ def WriteVerilog1D (name, data):
 	f.write("};\n\r")
 
 def WriteVerilog2D (name, data):
-	f.write("const real " + name + "r[%d:0][%d:0] = {\n" %((N-1),(N-1)))
+	f.write("\tlocalparam real " + name + "r[%d:0][%d:0] = {\n" %((N-1),(N-1)))
 	for i in range(0, N):
-		f.write("\t{")
+		f.write("\t\t{")
 		for j in range(0, N):
 			if (j > 0):
 				f.write(", ")
@@ -73,9 +75,9 @@ def WriteVerilog2D (name, data):
 		else:
 			f.write("}")
 	f.write("};\n\r")
-	f.write("const real " + name + "i[%d:0][%d:0] = {\n" %((N-1),(N-1)))
+	f.write("\tlocalparam real " + name + "i[%d:0][%d:0] = {\n" %((N-1),(N-1)))
 	for i in range(0, N):
-		f.write("\t{")
+		f.write("\t\t{")
 		for j in range(0, N):
 			if (j > 0):
 				f.write(", ")
