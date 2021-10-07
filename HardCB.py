@@ -521,6 +521,23 @@ class HardCB:
 		self.S = np.array(self.S)
 		csvfile.close()
 
+	def PrintLUTValues(self):
+		s = np.zeros(self.N)
+		for n in range(0, self.N):
+			for i in range(0, 2**self.N):
+				# Make input vector
+				ii = i
+				for j in range(0, self.N):
+					k = self.N - j - 1
+					if ii >= 2**k:
+						s[k] = 1
+						ii -= 2**k
+					else:
+						s[k] = -1
+				print("Input vector = " + str(s))
+				print("LUT Fb #" + str(i) + " n=" + str(n) + " \t" + str(np.dot(self.Fb[n,:], s)))
+				print("LUT Ff #" + str(i) + " n=" + str(n) + " \t" + str(np.dot(self.Ff[n,:], s)))
+
 	def WriteVerilog1D (self, f, name, data):
 		f.write("\tlocalparam real " + name + "r[0:%d] = {" %(self.N-1))
 		for i in range(0, self.N):
