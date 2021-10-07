@@ -1,26 +1,16 @@
-import Test_Architecture as arc
+import numpy as np
+from HardCB import HardCB
 
-arc.SetBitWidth(32)
-arc.SetTestParameters(32768, 3)
+OverRate = 1
+top = 240
+step = 20
 
-arc.DirectoryCheck()
+adc = HardCB()
+adc.SetSystemOrder(3)
+adc.SetFloatBitWidth(32)
+adc.SetPlotDirectory('test_plot')
+adc.ReadOfflineMatrixFile('data/offline_matrices')
+adc.ReadParallelCoefficients('data')
+adc.ReadStimuliFile('data/clean_signals')
 
-#arc.RunGolden(0)
-#arc.RunGolden(1)
-
-arc.RunBatchTest(32640, 1)
-arc.RunSNRBatch(1000, 48, 1)
-
-arc.RunBatchTest(32640, 2)
-arc.RunSNRBatch(1000, 48, 2)
-
-arc.RunBatchTest(32640, 4)
-arc.RunSNRBatch(1000, 48, 4)
-
-arc.RunBatchTest(32640, 8)
-arc.RunSNRBatch(1000, 48, 8)
-
-
-arc.SetTestParameters(32760, 3)
-arc.RunBatchTest(32640, 12)
-arc.RunSNRBatch(1000, 48, 12)
+results = adc.BatchIIR(220, OverRate)
