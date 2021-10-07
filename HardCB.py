@@ -595,7 +595,7 @@ class HardCB:
 
 	def WriteVerilogCoefficients(self, fileName, exponent):
 		f = open(fileName + '.sv', 'w')
-		f.write("package Coefficients\r\n")
+		f.write("package Coefficients;\r\n")
 		self.WriteVerilog1D(f, "Lf", self.Lf)
 		self.WriteVerilog1D(f, "Lb", self.Lb)
 		self.WriteVerilog1D(f, "Wf", self.Wf)
