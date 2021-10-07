@@ -10,6 +10,7 @@ f_clk = 240e6   # ADC sampling frequency
 OSR = 12        # Oversampling ratio
 T = 1.0/f_clk
 beta = 1.0/(2 * T)
+adc = HardCB()
 rho = - 1e-2
 kappa = - 1.0
 end_time = T * samples_num  # Simulation end
@@ -43,11 +44,16 @@ simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, 
                             analog_signal], t_stop=end_time)
 print(simulator)
 
-# Let's print the first 20 control decisions.
-index = 0
+tVectors = np.zeros((N, seq_len))
+x = 0
 for s in simulator:
-    if (index > 19):
-        break
-    print(f"step:{index} -> s:{np.array(s)}")
-    index += 1
+    y = 0
+    for num in s:
+        if (num == True):
+            tVectors[y][x] = 1
+        elif (num == False):
+            tVectors[y][x] = -1
+        y += 1
+    x += 1
 
+adc.WriteCSVFile("data/clean_signals2", tVectors)
