@@ -28,11 +28,18 @@ frequency = 5e6
 analog_system = cbadc.analog_system.ChainOfIntegrators(betaVec, rhoVec, kappaVec)
 # print the analog system such that we can very it being correctly initalized.
 print(analog_system)
+digital_estimator = cbadc.digital_estimator.DigitalEstimator(analog_system, digital_system, eta2, samples_num)
+print(digital_estimator)
 
 # Initialize the digital control.
 digital_control = cbadc.digital_control.DigitalControl(T, M)
 # print the digital control to verify proper initialization.
 print(digital_control)
+adc.WriteCSVFile("data/Ab", digital_estimator.Ab)
+adc.WriteCSVFile("data/Af", digital_estimator.Af)
+adc.WriteCSVFile("data/Bb", digital_estimator.Bb)
+adc.WriteCSVFile("data/Bf", digital_estimator.Bf)
+adc.WriteCSVFile("data/WT", digital_estimator.WT)
 
 # Instantiate the analog signal
 analog_signal = cbadc.analog_signal.Sinusodial(amplitude, frequency, phase, offset)
