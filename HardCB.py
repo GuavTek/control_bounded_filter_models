@@ -116,10 +116,14 @@ class HardCB:
 			for num in line:
 				num = num.replace("[", "")
 				num = num.replace("]", "")
-				temp.append(float(num)/2**exp)
+				try:
+					temp.append(float(num)/2**exp)
+				except:
+					print("!!! Ignored from result: " + num)
 		#	while (len(temp) < self.S_Length):
 		#		temp.append(0.0)
 		temp = np.array(temp)
+		print("Read " + str(temp.size) + " samples")
 		csvfile.close()
 		return temp
 	

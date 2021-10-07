@@ -3,11 +3,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 adc = HardCB()
-adc.SetPlotDirectory('test_plot')
+adc.SetPlotDirectory('VerilogResults')
 
-res = adc.ReadResultFile('Results', 0)
+res = adc.ReadResultFile('results_6', 0)
 
-adc.PlotFigure(res, 4000, "Waveform from Verilog simulation", "VerilogPlot")
+adc.PlotFigure(res[4864:], 1500, "Waveform from Verilog simulation", "VerilogPlot_6")
 #u_bat = arc.TestBatch(256)
 #arc.PlotPSD(u_bat, "", 1)
 #SNR = arc.PlotPSD(res, "PSD for stratus", 1)
