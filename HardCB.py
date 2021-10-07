@@ -14,11 +14,6 @@ class ComplexFixed(complex):
 
 class HardCB:
 	def __init__(self) -> None:
-		self.Af = []
-		self.Ab = []
-		self.Bf = []
-		self.Bb = []
-		self.W = []
 		self.S = []
 		self.plotFolder = 'plots_32bit'
 		self.f_clk = 500e6
@@ -59,7 +54,7 @@ class HardCB:
 		csvfile.close()
 		return temp
 
-	def ReadOfflineMatrixFile(self, fileName):
+	def ReadLegacyOfflineFile(self, fileName):
 		csvfile = open(fileName + '.csv', newline='')
 		test = csv.reader(csvfile, delimiter=';')
 		targetVar = "0"
@@ -91,6 +86,14 @@ class HardCB:
 		self.W = np.array(self.W)
 		self.W = np.resize(self.W, self.N)
 		csvfile.close()
+
+	def ReadOfflineFiles(self, folder):
+		self.Af = self.ReadCoeffFile(folder + '/Af')
+		self.Ab = self.ReadCoeffFile(folder + '/Ab')
+		self.Bf = self.ReadCoeffFile(folder + '/Bf')
+		self.Bb = self.ReadCoeffFile(folder + '/Bb')
+		self.W = self.ReadCoeffFile(folder + '/WT')
+		self.W = np.resize(self.W, self.N)
 
 	def ReadStimuliFile(self, fileName):
 		csvfile = open(fileName + '.csv', newline='')

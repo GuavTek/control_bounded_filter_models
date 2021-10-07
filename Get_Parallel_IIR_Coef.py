@@ -2,7 +2,7 @@ from HardCB import HardCB
 
 adc = HardCB()
 adc.SetSystemOrder(3)
-adc.ReadOfflineMatrixFile('data/offline_matrices')
+adc.ReadOfflineFiles('data')
 adc.ReadLegacyStimuliFile('data/control_signals')
 adc.CalculateIIRCoefficients()
 
