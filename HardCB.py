@@ -139,6 +139,16 @@ class HardCB:
 		self.Wf = self.ReadCoeffFile(folder + '/Wf')
 		self.Wb = self.ReadCoeffFile(folder + '/Wb')
 
+	def ReadFIRCoefficients(self, folder, OSR):
+		try:
+			self.h1 = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_h1')
+			self.h2 = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_h2')
+			self.h1 = np.array(self.h1, self.floatType)
+			self.h2 = np.array(self.h2, self.floatType)
+		except:
+			print("Error! Could not find files for given OSR")
+			raise SystemExit
+
 	def Complex32(self, var: complex) -> complex:
 		var.real = np.float16(var.real)
 		var.imag = np.float16(var.imag)
@@ -197,7 +207,7 @@ class HardCB:
 				tempSum = tempSum + (self.Wf[m]*Mf[m, i]).real + (self.Wb[m]*Mb[m, i]).real
 			result[i] = tempSum
 
-	# FIIR online implementation
+	# FIR IIR hybrid online implementation
 	# Baking all factors into LUTs so backward recursion is just summing
 	def FIIR(self, lookahead):
 		SBuff = np.concatenate(([[0],[0],[0]], self.S[:, 0:lookahead]), axis=1)
@@ -377,6 +387,23 @@ class HardCB:
 				Mb[n] = Mb[n] - (Lb_inv[n] * np.dot(self.Fb[n,:], s_buff[:,lookahead-1]))
 				Mf[n] = (self.Lf[n] * Mf[n] + np.dot(self.Ff[n,:], s_buff[:,lookahead-1]))
 				result[k-lookahead] = result[k-lookahead] + (self.Wf[n] * Mf[n]).real + (self.Wb[n] * Mb[n]).real
+		return result
+
+	def FIR(self, length, OSR = 1):
+		samples = np.zeros([self.N, length*2])
+		result = np.zeros(int(round(self.S_Length/OSR)), self.floatType)
+		for k in range(0, int(round(self.S_Length/OSR))):
+			samples[:, 1:2*length-1] = samples[:, 0:2*length-2]
+			try:
+				samples[:, 0] = self.S[:, k*OSR]
+			except:
+				samples[:, 0] = np.zeros(3)
+			# Backward recursion
+			for i in range(1,length+1):
+				result[k] += np.dot(self.h1[-i, :], samples[:, length-i])
+			# Forward recursion
+			for i in range(0, length):
+				result[k] += np.dot(self.h2[i, :], samples[:, length+i])
 		return result
 
 	# Plot a section of the wave
