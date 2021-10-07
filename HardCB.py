@@ -89,7 +89,7 @@ class HardCB:
 		self.Bf = np.array(self.Bf)
 		self.Bb = np.array(self.Bb)
 		self.W = np.array(self.W)
-		self.W = np.resize(self.W, 3)
+		self.W = np.resize(self.W, self.N)
 		csvfile.close()
 
 	def ReadStimuliFile(self, fileName):
