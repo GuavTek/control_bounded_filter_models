@@ -57,7 +57,7 @@ simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, 
                             analog_signal], t_stop=end_time)
 print(simulator)
 
-tVectors = np.zeros((N, samples_num))
+tVectors = np.zeros((N, samples_num), int)
 x = 0
 for s in simulator:
     y = 0
