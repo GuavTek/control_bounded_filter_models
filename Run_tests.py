@@ -10,7 +10,7 @@ adc.SetSystemOrder(3)
 adc.SetFloatBitWidth(32)
 adc.SetPlotDirectory('test_plot')
 adc.ReadOfflineMatrixFile('data/offline_matrices')
-adc.ReadParallelCoefficients('data')
+adc.ReadIIRCoefficients('data')
 adc.ReadStimuliFile('data/clean_signals')
 
 results = adc.BatchIIR(220, OverRate)

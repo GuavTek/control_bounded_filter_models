@@ -131,7 +131,7 @@ class HardCB:
 		return temp
 	
 	#### Load parallel coefficients ####
-	def ReadParallelCoefficients(self, folder):
+	def ReadIIRCoefficients(self, folder):
 		self.Fb = self.ReadCoeffFile(folder + '/Fb')
 		self.Ff = self.ReadCoeffFile(folder + '/Ff')
 		self.Lb = self.ReadCoeffFile(folder + '/Lb')
