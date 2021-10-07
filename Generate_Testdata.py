@@ -1,5 +1,5 @@
+from HardCB import *
 import cbadc
-from HardCB import HardCB
 import numpy as np
 
 N = 3   # Analog states
@@ -13,6 +13,7 @@ beta = 1.0/(2 * T)
 adc = HardCB()
 rho = - 1e-2
 kappa = - 1.0
+eta2 = 1e7
 end_time = T * samples_num  # Simulation end
 
 betaVec = beta * np.ones(N)
@@ -21,20 +22,23 @@ kappaVec = kappa * beta * np.eye(N)
 
 # Set up input signal
 amplitude = 0.5
-frequency = 5e6
+fs = 5e6
 
 
 # Instantiate a chain-of-integrators analog system.
 analog_system = cbadc.analog_system.ChainOfIntegrators(betaVec, rhoVec, kappaVec)
 # print the analog system such that we can very it being correctly initalized.
 print(analog_system)
-digital_estimator = cbadc.digital_estimator.DigitalEstimator(analog_system, digital_system, eta2, samples_num)
-print(digital_estimator)
 
 # Initialize the digital control.
 digital_control = cbadc.digital_control.DigitalControl(T, M)
 # print the digital control to verify proper initialization.
 print(digital_control)
+
+# Initialize estimator
+digital_estimator = cbadc.digital_estimator.DigitalEstimator(analog_system, digital_control, eta2, samples_num)
+print(digital_estimator)
+
 adc.WriteCSVFile("data/Ab", digital_estimator.Ab)
 adc.WriteCSVFile("data/Af", digital_estimator.Af)
 adc.WriteCSVFile("data/Bb", digital_estimator.Bb)
@@ -42,7 +46,7 @@ adc.WriteCSVFile("data/Bf", digital_estimator.Bf)
 adc.WriteCSVFile("data/WT", digital_estimator.WT)
 
 # Instantiate the analog signal
-analog_signal = cbadc.analog_signal.Sinusodial(amplitude, frequency, phase, offset)
+analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
 # print to ensure correct parametrization.
 print(analog_signal)
 
@@ -51,7 +55,7 @@ simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, 
                             analog_signal], t_stop=end_time)
 print(simulator)
 
-tVectors = np.zeros((N, seq_len))
+tVectors = np.zeros((N, samples_num))
 x = 0
 for s in simulator:
     y = 0
