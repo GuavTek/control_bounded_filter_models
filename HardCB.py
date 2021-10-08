@@ -109,6 +109,7 @@ class HardCB:
 			self.S.append(tempList)
 		self.S_Length = lineLength
 		self.S = np.array(self.S)
+		print("Read " + str(lineLength) + " samples")
 		csvfile.close()
 
 	def ReadResultFile(self, fileName, exp):
@@ -400,10 +401,10 @@ class HardCB:
 				samples[:, 0] = np.zeros(3)
 			# Backward recursion
 			for i in range(1,length+1):
-				result[k] += np.dot(self.h1[-i, :], samples[:, length-i])
+				result[k] += np.dot(self.h2[i-1, :], samples[:, length-i]) #np.dot(self.h1[-i, :], samples[:, length-i])
 			# Forward recursion
 			for i in range(0, length):
-				result[k] += np.dot(self.h2[i, :], samples[:, length+i])
+				result[k] += np.dot(self.h1[-i-1, :], samples[:, length+i]) #np.dot(self.h2[i, :], samples[:, length+i])
 		return result
 
 	# Plot a section of the wave
@@ -420,6 +421,9 @@ class HardCB:
 		arrLength = arr.size
 		endSlice = int(round(arrLength / 8))
 		remSlice = arrLength - 2 * endSlice
+		print("array length: " + str(arrLength))
+		print("end slice: " + str(endSlice))
+		print("rem slice: " + str(remSlice))
 
 		arr_f, freq = plt.psd(arr[endSlice:-endSlice], NFFT=remSlice, Fs=freq)
 		plt.xscale('log')
