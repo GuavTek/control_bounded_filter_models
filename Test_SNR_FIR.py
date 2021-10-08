@@ -2,16 +2,17 @@ import numpy as np
 from HardCB import HardCB
 
 OverRate = 1
-top = 100
+top = 240
 step = 20
 
 adc = HardCB()
+adc.f_clk = 240e6
 adc.SetSystemOrder(3)
 adc.SetFloatBitWidth(32)
 adc.SetPlotDirectory('test_plot')
 adc.ReadOfflineFiles('data')
-adc.ReadFIRCoefficients('data', 1)
-adc.ReadStimuliFile('data/clean_signals')
+adc.ReadFIRCoefficients('data', OverRate)
+adc.ReadStimuliFile('data/clean_signals2')
 
 golden = adc.GoldenBatch()
 adc.PlotFigure(golden, int(round(1536 / OverRate)), "Golden Batch architecture", 'GoldBatch')
