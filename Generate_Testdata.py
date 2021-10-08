@@ -4,7 +4,7 @@ import numpy as np
 
 N = 3   # Analog states
 M = N   # Digital states
-samples_num = 100 #32768     # Length of generated test data
+samples_num = 32767     # Length of generated test data
 FIR_size = 256
 
 f_clk = 240e6   # ADC sampling frequency
@@ -22,8 +22,8 @@ rhoVec = betaVec * rho
 kappaVec = kappa * beta * np.eye(N)
 
 # Set up input signal
-amplitude = 0.5
-fs = 5e6
+amplitude = 0.6
+fs = 500e3
 
 
 # Instantiate a chain-of-integrators analog system.
