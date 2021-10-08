@@ -4,7 +4,7 @@ import numpy as np
 
 N = 3   # Analog states
 M = N   # Digital states
-samples_num = 32767     # Length of generated test data
+samples_num = 32768     # Length of generated test data
 FIR_size = 256
 
 f_clk = 240e6   # ADC sampling frequency
