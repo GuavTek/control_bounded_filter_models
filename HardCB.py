@@ -420,13 +420,13 @@ class HardCB:
 	def PlotPSD(self, arr, freq, sig_leak=1):
 		T = 1.0 / freq
 		arrLength = arr.size
-		endSlice = int(round(arrLength / 8))
+		endSlice = int(round(arrLength / 16))
 		remSlice = arrLength - 2 * endSlice
 		print("array length: " + str(arrLength))
 		print("end slice: " + str(endSlice))
 		print("rem slice: " + str(remSlice))
 
-		arr_f, freq = plt.psd(arr[endSlice:-endSlice], NFFT=remSlice, Fs=freq)
+		arr_f, freq = plt.psd(arr, NFFT=arrLength, Fs=freq)
 		plt.xscale('log')
 		plt.grid(True)
 
