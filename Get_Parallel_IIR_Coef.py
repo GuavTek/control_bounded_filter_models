@@ -1,5 +1,6 @@
 from HardCB import HardCB
 
+OSR=1
 adc = HardCB()
 adc.SetSystemOrder(3)
 adc.ReadOfflineFiles('data')
@@ -22,6 +23,7 @@ if (WriteFiles):
 	adc.WriteCSVFile('data/clean_signals', adc.S)
 
 if (WriteHead):
+	adc.ReadFIRCoefficients('data', OSR)
 	adc.WriteCPPCoefficients('data/Coefficients', 256)
 	adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
