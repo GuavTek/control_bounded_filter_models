@@ -656,6 +656,8 @@ class HardCB:
 		self.WriteVerilog1D(f, "Wbi", self.Wb.imag)
 		self.WriteVerilog2DExtended(f, "Ff", self.Ff, self.Lf, exponent)
 		self.WriteVerilog2DExtended(f, "Fb", self.Fb, self.Lb, exponent)
+		self.WriteVerilog1D(f, "hf", self.hf.flatten())
+		self.WriteVerilog1D(f, "hb", self.hb.flatten())
 		f.write("\rendpackage")
 		f.write("\n\r")
 		f.close()
