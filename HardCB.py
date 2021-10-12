@@ -578,17 +578,11 @@ class HardCB:
 				print("LUT Ff #" + str(i) + " n=" + str(n) + " \t" + str(np.dot(self.Ff[n,:], s)))
 
 	def WriteVerilog1D (self, f, name, data):
-		f.write("\tlocalparam real " + name + "r[0:%d] = {" %(self.N-1))
-		for i in range(0, self.N):
+		f.write("\tlocalparam real " + name + "[0:%d] = {" %(np.size(data)-1))
+		for i in range(0, np.size(data)):
 			if (i > 0):
 				f.write(", ")
-			f.write(str(data[i].real))
-		f.write("};\n\r")
-		f.write("\tlocalparam real " + name + "i[0:%d] = {" %(self.N-1))
-		for i in range(0, self.N):
-			if (i > 0):
-				f.write(", ")
-			f.write(str(data[i].imag))
+			f.write(str(data[i]))
 		f.write("};\n\r")
 
 	def WriteVerilog2D (self, f, name, data):
@@ -652,10 +646,14 @@ class HardCB:
 	def WriteVerilogCoefficients(self, fileName, exponent):
 		f = open(fileName + '.sv', 'w')
 		f.write("package Coefficients;\r\n")
-		self.WriteVerilog1D(f, "Lf", self.Lf)
-		self.WriteVerilog1D(f, "Lb", self.Lb)
-		self.WriteVerilog1D(f, "Wf", self.Wf)
-		self.WriteVerilog1D(f, "Wb", self.Wb)
+		self.WriteVerilog1D(f, "Lfr", self.Lf.real)
+		self.WriteVerilog1D(f, "Lfi", self.Lf.imag)
+		self.WriteVerilog1D(f, "Lbr", self.Lb.real)
+		self.WriteVerilog1D(f, "Lbi", self.Lb.imag)
+		self.WriteVerilog1D(f, "Wfr", self.Wf.real)
+		self.WriteVerilog1D(f, "Wfi", self.Wf.imag)
+		self.WriteVerilog1D(f, "Wbr", self.Wb.real)
+		self.WriteVerilog1D(f, "Wbi", self.Wb.imag)
 		self.WriteVerilog2DExtended(f, "Ff", self.Ff, self.Lf, exponent)
 		self.WriteVerilog2DExtended(f, "Fb", self.Fb, self.Lb, exponent)
 		f.write("\rendpackage")
