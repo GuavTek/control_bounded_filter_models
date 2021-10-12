@@ -69,7 +69,11 @@ for s in simulator:
         y += 1
     x += 1
 
+# Write stimuli files
 adc.WriteCSVFile("data/clean_signals2", tVectors)
+adc.ReadStimuliFile("data/clean_signals2")
+adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
+adc.WriteVerilogStimuli('data/verilog_signals')
 
 # Prepare FIR parameters
 omega_3dB = 2 * np.pi /(T * OSR)
