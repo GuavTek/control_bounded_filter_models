@@ -19,6 +19,7 @@ adc.PlotFigure(golden[1920:-1920], int(round(1536 / OverRate)), "Golden Batch ar
 
 
 SNR_FIR = []
+adc.osr = OverRate
 # Simulate
 x = np.arange(step, top+1, step)
 for langth in x:
