@@ -142,10 +142,10 @@ class HardCB:
 
 	def ReadFIRCoefficients(self, folder, OSR):
 		try:
-			self.h1 = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_h1')
-			self.h2 = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_h2')
-			self.h1 = np.array(self.h1, self.floatType)
-			self.h2 = np.array(self.h2, self.floatType)
+			self.hf = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_hf')
+			self.hb = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_hb')
+			self.hf = np.array(self.hf, self.floatType)
+			self.hb = np.array(self.hb, self.floatType)
 		except:
 			print("Error! Could not find files for given OSR")
 			raise SystemExit
@@ -398,13 +398,14 @@ class HardCB:
 			try:
 				samples[:, 0] = self.S[:, k*OSR]
 			except:
+				print("Filling empty sample at time " + str(k))
 				samples[:, 0] = np.zeros(3)
-			# Backward recursion
-			for i in range(1,length+1):
-				result[k] += np.dot(self.h2[i-1, :], samples[:, length-i]) #np.dot(self.h1[-i, :], samples[:, length-i])
-			# Forward recursion
+			# Lookahead
 			for i in range(0, length):
-				result[k] += np.dot(self.h1[-i-1, :], samples[:, length+i]) #np.dot(self.h2[i, :], samples[:, length+i])
+				result[k] += np.dot(self.hb[i, :], samples[:, length-i-1])
+			# Lookback
+			for i in range(0, length):
+				result[k] += np.dot(self.hf[i, :], samples[:, length+i])
 		return result
 
 	# Plot a section of the wave

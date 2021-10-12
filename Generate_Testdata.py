@@ -83,14 +83,26 @@ FIR_estimator_ref = cbadc.digital_estimator.FIRFilter(analog_system, digital_con
 print(FIR_estimator_ref)
 
 # Write Coefficients to files
-h1 = FIR_estimator_ref.h[0][0:FIR_size-1]
-h2 = FIR_estimator_ref.h[0][FIR_size:-1]
-print("h1 = ")
-print(h1)
-print("h2 = ")
-print(h2)
-adc.WriteCSVFile("data/FIR1_h1", h1)
-adc.WriteCSVFile("data/FIR1_h2", h2)
+#h1 = FIR_estimator_ref.h[0][0:FIR_size-1]
+#h2 = FIR_estimator_ref.h[0][FIR_size:-1]
+#print("h1 = ")
+#print(h1)
+#print("h2 = ")
+#print(h2)
+#adc.WriteCSVFile("data/FIR1_h1", h1)
+#adc.WriteCSVFile("data/FIR1_h2", h2)
+
+hb = np.zeros((FIR_size, M))
+hf = np.zeros((FIR_size, M))
+tempb = FIR_estimator_ref.Bb
+tempf = FIR_estimator_ref.Bf
+for i in range(0, FIR_size):
+    hb[i] = np.dot(FIR_estimator_ref.WT, tempb)
+    hf[i] = np.dot(FIR_estimator_ref.WT, -tempf)
+    tempb = np.dot(FIR_estimator_ref.Ab, tempb)
+    tempf = np.dot(FIR_estimator_ref.Af, tempf)
+adc.WriteCSVFile("data/FIR1_hb", hb)
+adc.WriteCSVFile("data/FIR1_hf", hf)
 
 # Create anti-alias filter
 wp = omega_3dB / 2.0
@@ -109,11 +121,16 @@ FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_new, digital_
 print(FIR_estimator_ds)
 
 # Write coefficients to file
-h1 = FIR_estimator_ds.h[0][0:FIR_size-1]
-h2 = FIR_estimator_ds.h[0][FIR_size:-1]
-print("h1 = ")
-print(h1)
-print("h2 = ")
-print(h2)
-adc.WriteCSVFile("data/FIR" + str(OSR) + "_h1", h1)
-adc.WriteCSVFile("data/FIR" + str(OSR) + "_h2", h2)
+#h1 = FIR_estimator_ds.h[0][0:FIR_size-1]
+#h2 = FIR_estimator_ds.h[0][FIR_size:-1]
+h2 = np.zeros((FIR_size, M))
+h1 = np.zeros((FIR_size, M))
+temp2 = FIR_estimator_ds.Bb
+temp1 = FIR_estimator_ds.Bf
+for i in range(0, FIR_size):
+    h2[i] = np.dot(FIR_estimator_ds.WT, temp2)
+    h1[i] = np.dot(FIR_estimator_ds.WT, -temp1)
+    temp2 = np.dot(FIR_estimator_ds.Ab, temp2)
+    temp1 = np.dot(FIR_estimator_ds.Af, temp1)
+adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", h1)
+adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", h2)
