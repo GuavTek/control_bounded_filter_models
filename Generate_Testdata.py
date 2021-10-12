@@ -4,8 +4,8 @@ import numpy as np
 
 N = 3   # Analog states
 M = N   # Digital states
-samples_num = 32768     # Length of generated test data
-FIR_size = 256
+samples_num = 24000     # Length of generated test data
+FIR_size = 400
 
 f_clk = 240e6   # ADC sampling frequency
 OSR = 12        # Oversampling ratio
@@ -47,6 +47,16 @@ adc.WriteCSVFile("data/Bb", digital_estimator.Bb)
 adc.WriteCSVFile("data/Bf", digital_estimator.Bf)
 adc.WriteCSVFile("data/WT", digital_estimator.WT)
 
+# Generate IIR coefficients
+adc.ReadOfflineFiles('data')
+adc.CalculateIIRCoefficients()
+adc.WriteCSVFile('data/Lf', adc.Lf)
+adc.WriteCSVFile('data/Lb', adc.Lb)
+adc.WriteCSVFile('data/Ff', adc.Ff)
+adc.WriteCSVFile('data/Fb', adc.Fb)
+adc.WriteCSVFile('data/Wf', adc.Wf)
+adc.WriteCSVFile('data/Wb', adc.Wb)
+
 # Instantiate the analog signal
 analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
 # print to ensure correct parametrization.
@@ -70,8 +80,8 @@ for s in simulator:
     x += 1
 
 # Write stimuli files
-adc.WriteCSVFile("data/clean_signals2", tVectors)
-adc.ReadStimuliFile("data/clean_signals2")
+adc.WriteCSVFile("data/clean_signals", tVectors)
+adc.ReadStimuliFile("data/clean_signals")
 adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
 adc.WriteVerilogStimuli('data/verilog_signals')
 
@@ -107,6 +117,10 @@ for i in range(0, FIR_size):
     tempf = np.dot(FIR_estimator_ref.Af, tempf)
 adc.WriteCSVFile("data/FIR1_hb", hb)
 adc.WriteCSVFile("data/FIR1_hf", hf)
+
+# Write verilog header
+adc.ReadFIRCoefficients('data', 1)
+adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
 # Create anti-alias filter
 wp = omega_3dB / 2.0
