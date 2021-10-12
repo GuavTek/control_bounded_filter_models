@@ -6,12 +6,13 @@ top = 240
 step = 20
 
 adc = HardCB()
+adc.f_clk = 240e6
 adc.SetSystemOrder(3)
 adc.SetFloatBitWidth(32)
 adc.SetPlotDirectory('test_plot')
 adc.ReadOfflineFiles('data')
 adc.ReadIIRCoefficients('data')
-adc.ReadStimuliFile('data/clean_signals')
+adc.ReadStimuliFile('data/clean_signals2')
 
 #golden = adc.GoldenBatch()
 #adc.PlotFigure(golden, int(round(1536 / OverRate)), "Golden Batch architecture", 'GoldBatch')
