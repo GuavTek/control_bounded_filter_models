@@ -22,7 +22,7 @@ rhoVec = betaVec * rho
 kappaVec = kappa * beta * np.eye(N)
 
 # Set up input signal
-amplitude = 0.6
+amplitude = 0.8
 fs = 500e3
 
 
