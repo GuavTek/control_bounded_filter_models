@@ -618,9 +618,9 @@ class HardCB:
 			for j in range(0,self.N):
 				for k in range(0,self.N):
 					tempData[j][i*self.N + k] = data[j][k] * expData[j]**i
-		f.write("localparam real " + name + "r[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		f.write("\tlocalparam real " + name + "r[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
 		for i in range(0, self.N):
-			f.write("\t'{")
+			f.write("\t\t'{")
 			for j in range(0, self.N*exponent):
 				if (j > 0):
 					f.write(", ")
@@ -645,6 +645,7 @@ class HardCB:
 
 	def WriteVerilogCoefficients(self, fileName, exponent):
 		f = open(fileName + '.sv', 'w')
+		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
 		f.write("package Coefficients;\r\n")
 		self.WriteVerilog1D(f, "Lfr", self.Lf.real)
 		self.WriteVerilog1D(f, "Lfi", self.Lf.imag)
@@ -658,7 +659,7 @@ class HardCB:
 		self.WriteVerilog2DExtended(f, "Fb", self.Fb, self.Lb, exponent)
 		self.WriteVerilog1D(f, "hf", self.hf.flatten())
 		self.WriteVerilog1D(f, "hb", self.hb.flatten())
-		f.write("\rendpackage")
+		f.write("\rendpackage\n`endif")
 		f.write("\n\r")
 		f.close()
 
