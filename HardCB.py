@@ -14,6 +14,7 @@ class ComplexFixed(complex):
 
 class HardCB:
 	def __init__(self) -> None:
+	def __init__(self, M) -> None:
 		self.S = []
 		self.plotFolder = 'plots_32bit'
 		self.f_clk = 500e6
@@ -22,7 +23,7 @@ class HardCB:
 		self.floatType = np.float32
 		self.complexType = np.complex64
 		self.qformat = {'signed': True, 'm': 64, 'n': 64, 'overflow': 'wrap', 'rounding': 'down', 'overflow_alert': 'warning'}
-		self.N = 3
+		self.N = M
 		pass
 
 	def SetSystemOrder(self, orderN):
