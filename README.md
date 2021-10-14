@@ -3,7 +3,6 @@
 
 Using the models:</p>
 <ol>
-<li>Add offline matrices and control-signals to data folder</li>
-<li>Run Get_Parallel_IIR_Coef.py to generate coefficients</li>
-<li>Run Run_tests.py to run tests and generate graphs</li>
+<li>Run Generate_Testdata.py to create the filter coefficients and stimuli</li>
+<li>Run Test_SNR_***.py to plot results from the architectures</li>
 </ol>
