@@ -662,6 +662,7 @@ class HardCB:
 		f = open(fileName + '.sv', 'w')
 		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
 		f.write("package Coefficients;\r\n")
+		f.write("\tlocalparam N = " + str(self.N) + ";\n")
 		self.WriteVerilog1D(f, "Lfr", self.Lf.real)
 		self.WriteVerilog1D(f, "Lfi", self.Lf.imag)
 		self.WriteVerilog1D(f, "Lbr", self.Lb.real)
