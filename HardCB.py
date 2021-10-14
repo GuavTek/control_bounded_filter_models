@@ -394,7 +394,7 @@ class HardCB:
 		samples = np.zeros([self.N, length*2])
 		result = np.zeros(int(round(self.S_Length/OSR)), self.floatType)
 		for k in range(0, int(round(self.S_Length/OSR))):
-			samples[:, 1:2*length-1] = samples[:, 0:2*length-2]
+			samples[:, 1:] = samples[:, 0:-1]
 			try:
 				samples[:, 0] = self.S[:, k*OSR]
 			except:
