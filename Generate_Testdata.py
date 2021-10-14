@@ -30,8 +30,8 @@ amplitude = 0.8
 fs = 500e3
 
 
-# Instantiate a chain-of-integrators analog system.
-analog_system = cbadc.analog_system.ChainOfIntegrators(betaVec, rhoVec, gammaVec)
+# Instantiate a leapfrog analog system.
+analog_system = cbadc.analog_system.LeapFrog(betaVec, rhoVec, gammaVec)
 # print the analog system such that we can very it being correctly initalized.
 print(analog_system)
 
