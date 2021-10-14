@@ -269,7 +269,7 @@ class HardCB:
 				try:
 					Reg_Loading[:,i] = self.S[:,k+i]
 				except:
-					Reg_Loading[:,i] = np.array([0, 0, 0])
+					Reg_Loading[:,i] = np.zeros(self.N)
 				# Downsample clock
 				if (i % DownSampFactor != 0):
 					continue
@@ -337,7 +337,7 @@ class HardCB:
 				try:
 					Reg_Loading[:,i] = self.S[:,k+i]
 				except:
-					Reg_Loading[:,i] = np.array([0, 0, 0])
+					Reg_Loading[:,i] = np.zeros(self.N)
 				# Calculation
 				for n in range(0, self.N):
 					# Lookahead stage
@@ -400,7 +400,7 @@ class HardCB:
 				samples[:, 0] = self.S[:, k*OSR]
 			except:
 				print("Filling empty sample at time " + str(k))
-				samples[:, 0] = np.zeros(3)
+				samples[:, 0] = np.zeros(self.N)
 			# Lookahead
 			for i in range(0, length):
 				result[k] += np.dot(self.hb[i, :], samples[:, length-i-1])
