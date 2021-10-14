@@ -2,24 +2,28 @@ from HardCB import *
 import cbadc
 import numpy as np
 
-N = 3   # Analog states
+adc = HardCB()
+N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated test data
 FIR_size = 400
 
 f_clk = 240e6   # ADC sampling frequency
+fu = 20e6       # integrator Unity gain frequency
+fc = 5e6        # Filter cut-off
+wc = 2*np.pi*fc
 OSR = 12        # Oversampling ratio
-T = 1.0/f_clk
-beta = 1.0/(2 * T)
-adc = HardCB()
-rho = - 1e-2
+
+beta = 2*np.pi*fu
+T = 1.0/(2*beta)
+rho = - -wc**2/(4*beta)
 kappa = - 1.0
 eta2 = 1e7
 end_time = T * samples_num  # Simulation end
 
 betaVec = beta * np.ones(N)
-rhoVec = betaVec * rho
-kappaVec = kappa * beta * np.eye(N)
+rhoVec = np.array([0 if i==0 else rho for i in range(N)])
+gammaVec = kappa * beta * np.eye(N)
 
 # Set up input signal
 amplitude = 0.8
@@ -27,7 +31,7 @@ fs = 500e3
 
 
 # Instantiate a chain-of-integrators analog system.
-analog_system = cbadc.analog_system.ChainOfIntegrators(betaVec, rhoVec, kappaVec)
+analog_system = cbadc.analog_system.ChainOfIntegrators(betaVec, rhoVec, gammaVec)
 # print the analog system such that we can very it being correctly initalized.
 print(analog_system)
 
@@ -86,9 +90,6 @@ adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
 adc.WriteVerilogStimuli('data/verilog_signals')
 
 # Prepare FIR parameters
-omega_3dB = 2 * np.pi /(T * OSR)
-G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([omega_3dB/2])))
-eta2 = G_at_omega**2
 L1 = FIR_size
 L2 = FIR_size
 
@@ -123,12 +124,14 @@ adc.ReadFIRCoefficients('data', 1)
 adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
 # Create anti-alias filter
-wp = omega_3dB / 2.0
-ws = omega_3dB
+#wp = omega_3dB / 2.0
+#ws = omega_3dB
 gpass = 0.1
 gstop = 80
+G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wc/2])))
+eta2 = G_at_omega**2
 
-filter = cbadc.analog_system.IIRDesign(wp, ws, gpass, gstop, ftype="ellip")
+filter = cbadc.analog_system.IIRDesign(wp=wc/2, ws=wc, gpass=gpass, gstop=gstop, ftype="ellip")
 
 # Create new analog system with filter
 analog_system_new = cbadc.analog_system.chain([filter, analog_system])
