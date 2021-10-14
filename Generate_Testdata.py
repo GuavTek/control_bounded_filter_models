@@ -10,7 +10,7 @@ samples_num = 24000     # Length of generated test data
 FIR_size = 400          # Number of coefficients generated
 adc = HardCB(M)
 
-#f_clk = 250e6           # ADC sampling frequency
+f_clk = 250e6           # ADC sampling frequency
 fu = 20e6               # integrator Unity gain frequency
 fc = 5e6                # Filter cut-off
 kappa = -1.0
@@ -20,11 +20,11 @@ OSR = 12                # Oversampling ratio
 amplitude = 0.8
 fs = 500e3
 
-#T = 1.0/f_clk
-#beta = 1/(2*T)
+T = 1.0/f_clk
+beta = 1/(2*T)
 
-beta = 2*np.pi*fu
-T = 1.0/(2*beta)
+#beta = 2*np.pi*fu
+#T = 1.0/(2*beta)
 
 wp = 2*np.pi*fc
 rho = -wp**2/(4*beta)
