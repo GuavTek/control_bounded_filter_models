@@ -200,13 +200,14 @@ class HardCB:
 		result = np.zeros(self.S_Length, float)
 		for i in range(1, self.S_Length):
 			for m in range(0, self.N):
-				Mf[m, i] = self.Lf[m]*Mf[m, i-1] + self.Ff[m,0]*self.S[0, i-1] + self.Ff[m,1]*self.S[1, i-1] + self.Ff[m,2]*self.S[2, i-1]
-				Mb[m, self.S_Length-i-1] = self.Lb[m]*Mb[m, self.S_Length-i] + self.Fb[m,0]*self.S[0, self.S_Length-i-1] + self.Fb[m,1]*self.S[1, self.S_Length-i-1] + self.Fb[m,2]*self.S[2, self.S_Length-i-1]
+				Mf[m, i] = self.Lf[m]*Mf[m, i-1] + np.dot(self.Ff[m,:], self.S[:, i-1])
+				Mb[m, self.S_Length-i-1] = self.Lb[m]*Mb[m, self.S_Length-i] + np.dot(self.Fb[m,:], self.S[:, self.S_Length-i-1])
 		for i in range(0, self.S_Length):
 			tempSum = 0
 			for m in range(0, self.N):
 				tempSum = tempSum + (self.Wf[m]*Mf[m, i]).real + (self.Wb[m]*Mb[m, i]).real
 			result[i] = tempSum
+		return result
 
 	# FIR IIR hybrid online implementation
 	# Baking all factors into LUTs so backward recursion is just summing
