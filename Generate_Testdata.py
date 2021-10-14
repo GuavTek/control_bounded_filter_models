@@ -3,6 +3,7 @@ from HardCB import *
 import cbadc
 import numpy as np
 
+
 N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated test data
@@ -12,9 +13,12 @@ adc = HardCB(M)
 #f_clk = 250e6           # ADC sampling frequency
 fu = 20e6               # integrator Unity gain frequency
 fc = 5e6                # Filter cut-off
-wp = 2*np.pi*fc
 kappa = -1.0
 OSR = 12                # Oversampling ratio
+
+# Input signal
+amplitude = 0.8
+fs = 500e3
 
 #T = 1.0/f_clk
 #beta = 1/(2*T)
@@ -22,16 +26,12 @@ OSR = 12                # Oversampling ratio
 beta = 2*np.pi*fu
 T = 1.0/(2*beta)
 
+wp = 2*np.pi*fc
 rho = -wp**2/(4*beta)
 
 betaVec = beta * np.ones(N)
 rhoVec = np.array([0 if i==0 else rho for i in range(N)])
 gammaVec = kappa * beta * np.eye(N)
-
-# Set up input signal
-amplitude = 0.8
-fs = 500e3
-
 
 # Instantiate a leapfrog analog system.
 analog_system = cbadc.analog_system.LeapFrog(betaVec, rhoVec, gammaVec)
@@ -43,18 +43,19 @@ digital_control = cbadc.digital_control.DigitalControl(T, M)
 # print the digital control to verify proper initialization.
 print(digital_control)
 
-# Create anti-alias filter
+# Create band-limiting filter
 gpass = 0.1
 gstop = 80
 filter = cbadc.analog_system.IIRDesign(wp=wp/2, ws=wp, gpass=gpass, gstop=gstop, ftype="ellip")
 
 # Create new analog system with filter
-analog_system_new = cbadc.analog_system.chain([filter, analog_system])
-print(analog_system_new)
+analog_system_prefiltered = cbadc.analog_system.chain([filter, analog_system])
+print(analog_system_prefiltered)
 
 G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wp/2])))
 eta2 = G_at_omega**2
-print(f"eta2 = {eta2}, {10 * np.log10(eta2)} [dB]")
+
+##### Generate IIR coefficients #####
 
 # Initialize estimator
 digital_estimator = cbadc.digital_estimator.ParallelEstimator(analog_system, digital_control, eta2, samples_num)
@@ -84,35 +85,7 @@ adc.WriteCSVFile('data/Fb', digital_estimator.backward_b)
 adc.WriteCSVFile('data/Wf', np.reshape(digital_estimator.forward_w, M))
 adc.WriteCSVFile('data/Wb', np.reshape(digital_estimator.backward_w, M))
 
-# Instantiate the analog signal
-analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
-# print to ensure correct parametrization.
-print(analog_signal)
-
-end_time = T * samples_num  # Simulation end
-
-# Instantiate the simulator.
-simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
-                            analog_signal], t_stop=end_time)
-print(simulator)
-
-tVectors = np.zeros((N, samples_num), int)
-x = 0
-for s in simulator:
-    y = 0
-    for num in s:
-        if (num == True):
-            tVectors[y][x] = 1
-        elif (num == False):
-            tVectors[y][x] = -1
-        y += 1
-    x += 1
-
-# Write stimuli files
-adc.WriteCSVFile("data/clean_signals", tVectors)
-adc.ReadStimuliFile("data/clean_signals")
-adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
-adc.WriteVerilogStimuli('data/verilog_signals')
+##### Generate FIR coefficients #####
 
 # Prepare FIR parameters
 L1 = FIR_size
@@ -154,3 +127,37 @@ adc.WriteVerilogCoefficients('data/Coefficients', 20)
 #    hf[i] = h1[FIR_size-i-1]
 #adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", hf)
 #adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", hb)
+
+##### Generate Stimuli #####
+
+# Instantiate the analog signal
+analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
+# print to ensure correct parametrization.
+print(analog_signal)
+
+end_time = T * samples_num  # Simulation end
+
+# Instantiate the simulator.
+simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
+                            analog_signal], t_stop=end_time)
+print(simulator)
+
+tVectors = np.zeros((N, samples_num), int)
+x = 0
+for s in simulator:
+    y = 0
+    for num in s:
+        if (num == True):
+            tVectors[y][x] = 1
+        elif (num == False):
+            tVectors[y][x] = -1
+        y += 1
+    x += 1
+
+# Write stimuli files
+adc.WriteCSVFile("data/clean_signals", tVectors)
+adc.ReadStimuliFile("data/clean_signals")
+adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
+adc.WriteVerilogStimuli('data/verilog_signals')
+
+
