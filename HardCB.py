@@ -253,7 +253,6 @@ class HardCB:
 		M_B = np.zeros(self.N, self.complexType)		# Backward recursion
 		M_F = np.zeros(self.N, self.complexType)		# Forward recursion
 		S_DF = np.zeros((self.N,OSR))					# Delayed sample for forward recursion
-		M_DF = np.zeros(self.N, self.floatType)
 
 		# Sample memories
 		Reg_Loading = np.zeros((self.N,SampleSize))		# Input cycle
@@ -294,12 +293,10 @@ class HardCB:
 					# Forward recursion
 					temp = 0
 					for a in range(0,OSR):
-						temp += np.dot(self.Ff[n,:], Reg_Compute[:,i+a]) * (self.Lf[n] ** (OSR - 1 - a))
-						S_DF[:,a] = Reg_Compute[:,i+a]
+						temp += np.dot(self.Ff[n,:], S_DF[:,a]) * (self.Lf[n] ** (OSR - 1 - a))
 					M_F[n] = ((self.Lf[n] ** OSR) * M_F[n] + temp)
 					if self.complexType == complex: M_F = self.Complex32(M_F)
-					Reg_PartResultF[id] += M_DF[n]
-					M_DF[n] = (self.Wf[n] * M_F[n]).real
+					Reg_PartResultF[id] += (self.Wf[n] * M_F[n]).real
 
 					# Backward Recursion
 					temp = 0
@@ -308,7 +305,11 @@ class HardCB:
 					M_B[n] = ((self.Lb[n] ** OSR) * M_B[n] + temp)
 					if self.complexType == complex: M_B = self.Complex32(M_B)
 					Reg_PartResultB[jd] += (self.Wb[n] * M_B[n]).real
-					
+				
+				# Save forward samples
+				for a in range(0,OSR):
+					S_DF[:,a] = Reg_Compute[:,i+a]
+
 				# Output stage
 				k_delayed = int(round((k - 4*SampleSize) / OSR))
 				if ((k_delayed >= 0) and (k_delayed+id < int(round(self.S_Length/OSR)))):
