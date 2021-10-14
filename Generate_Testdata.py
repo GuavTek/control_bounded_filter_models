@@ -1,25 +1,28 @@
+from cbadc.digital_estimator import DigitalEstimator
 from HardCB import *
 import cbadc
 import numpy as np
 
-adc = HardCB()
 N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated test data
-FIR_size = 400
+FIR_size = 400          # Number of coefficients generated
+adc = HardCB(M)
 
-f_clk = 240e6   # ADC sampling frequency
-fu = 20e6       # integrator Unity gain frequency
-fc = 5e6        # Filter cut-off
-wc = 2*np.pi*fc
-OSR = 12        # Oversampling ratio
+#f_clk = 250e6           # ADC sampling frequency
+fu = 20e6               # integrator Unity gain frequency
+fc = 5e6                # Filter cut-off
+wp = 2*np.pi*fc
+kappa = -1.0
+OSR = 12                # Oversampling ratio
+
+#T = 1.0/f_clk
+#beta = 1/(2*T)
 
 beta = 2*np.pi*fu
 T = 1.0/(2*beta)
-rho = - -wc**2/(4*beta)
-kappa = - 1.0
-eta2 = 1e7
-end_time = T * samples_num  # Simulation end
+
+rho = -wp**2/(4*beta)
 
 betaVec = beta * np.ones(N)
 rhoVec = np.array([0 if i==0 else rho for i in range(N)])
@@ -40,8 +43,21 @@ digital_control = cbadc.digital_control.DigitalControl(T, M)
 # print the digital control to verify proper initialization.
 print(digital_control)
 
+# Create anti-alias filter
+gpass = 0.1
+gstop = 80
+filter = cbadc.analog_system.IIRDesign(wp=wp/2, ws=wp, gpass=gpass, gstop=gstop, ftype="ellip")
+
+# Create new analog system with filter
+analog_system_new = cbadc.analog_system.chain([filter, analog_system])
+print(analog_system_new)
+
+G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wp/2])))
+eta2 = G_at_omega**2
+print(f"eta2 = {eta2}, {10 * np.log10(eta2)} [dB]")
+
 # Initialize estimator
-digital_estimator = cbadc.digital_estimator.DigitalEstimator(analog_system, digital_control, eta2, samples_num)
+digital_estimator = cbadc.digital_estimator.ParallelEstimator(analog_system, digital_control, eta2, samples_num)
 print(digital_estimator)
 
 # Write to csv files
@@ -52,19 +68,28 @@ adc.WriteCSVFile("data/Bf", digital_estimator.Bf)
 adc.WriteCSVFile("data/WT", digital_estimator.WT)
 
 # Generate IIR coefficients
-adc.ReadOfflineFiles('data')
-adc.CalculateIIRCoefficients()
-adc.WriteCSVFile('data/Lf', adc.Lf)
-adc.WriteCSVFile('data/Lb', adc.Lb)
-adc.WriteCSVFile('data/Ff', adc.Ff)
-adc.WriteCSVFile('data/Fb', adc.Fb)
-adc.WriteCSVFile('data/Wf', adc.Wf)
-adc.WriteCSVFile('data/Wb', adc.Wb)
+#adc.ReadOfflineFiles('data')
+#adc.CalculateIIRCoefficients()
+#adc.WriteCSVFile('data/Lf', adc.Lf) 
+#adc.WriteCSVFile('data/Lb', adc.Lb)
+#adc.WriteCSVFile('data/Ff', adc.Ff)
+#adc.WriteCSVFile('data/Fb', adc.Fb)
+#adc.WriteCSVFile('data/Wf', adc.Wf)
+#adc.WriteCSVFile('data/Wb', adc.Wb)
+
+adc.WriteCSVFile('data/Lf', digital_estimator.forward_a) 
+adc.WriteCSVFile('data/Lb', digital_estimator.backward_a)
+adc.WriteCSVFile('data/Ff', digital_estimator.forward_b)
+adc.WriteCSVFile('data/Fb', digital_estimator.backward_b)
+adc.WriteCSVFile('data/Wf', np.reshape(digital_estimator.forward_w, M))
+adc.WriteCSVFile('data/Wb', np.reshape(digital_estimator.backward_w, M))
 
 # Instantiate the analog signal
 analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
 # print to ensure correct parametrization.
 print(analog_signal)
+
+end_time = T * samples_num  # Simulation end
 
 # Instantiate the simulator.
 simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
@@ -98,60 +123,34 @@ FIR_estimator_ref = cbadc.digital_estimator.FIRFilter(analog_system, digital_con
 print(FIR_estimator_ref)
 
 # Write Coefficients to files
-#h1 = FIR_estimator_ref.h[0][0:FIR_size-1]
-#h2 = FIR_estimator_ref.h[0][FIR_size:-1]
-#print("h1 = ")
-#print(h1)
-#print("h2 = ")
-#print(h2)
-#adc.WriteCSVFile("data/FIR1_h1", h1)
-#adc.WriteCSVFile("data/FIR1_h2", h2)
+h1 = FIR_estimator_ref.h[0][0:FIR_size]
+h2 = FIR_estimator_ref.h[0][FIR_size:]
 
-hb = np.zeros((FIR_size, M))
+hb = h2
 hf = np.zeros((FIR_size, M))
-tempb = FIR_estimator_ref.Bb
-tempf = FIR_estimator_ref.Bf
 for i in range(0, FIR_size):
-    hb[i] = np.dot(FIR_estimator_ref.WT, tempb)
-    hf[i] = np.dot(FIR_estimator_ref.WT, -tempf)
-    tempb = np.dot(FIR_estimator_ref.Ab, tempb)
-    tempf = np.dot(FIR_estimator_ref.Af, tempf)
+    hf[i] = h1[FIR_size-i-1]
 adc.WriteCSVFile("data/FIR1_hb", hb)
 adc.WriteCSVFile("data/FIR1_hf", hf)
 
 # Write verilog header
+adc.ReadIIRCoefficients('data')
 adc.ReadFIRCoefficients('data', 1)
 adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
-# Create anti-alias filter
-#wp = omega_3dB / 2.0
-#ws = omega_3dB
-gpass = 0.1
-gstop = 80
-G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wc/2])))
-eta2 = G_at_omega**2
-
-filter = cbadc.analog_system.IIRDesign(wp=wc/2, ws=wc, gpass=gpass, gstop=gstop, ftype="ellip")
-
-# Create new analog system with filter
-analog_system_new = cbadc.analog_system.chain([filter, analog_system])
-print(analog_system_new)
+#G_at_omega = np.linalg.norm(analog_system_new.transfer_function_matrix(np.array([wp/2])))
+#eta2 = G_at_omega**2
 
 # Instantiate FIR filter with downsampling
-FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_new, digital_control, eta2, L1, L2, downsample=OSR)
-print(FIR_estimator_ds)
+#FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_new, digital_control, eta2, L1, L2, downsample=OSR)
+#print(FIR_estimator_ds)
 
 # Write coefficients to file
-#h1 = FIR_estimator_ds.h[0][0:FIR_size-1]
-#h2 = FIR_estimator_ds.h[0][FIR_size:-1]
-h2 = np.zeros((FIR_size, M))
-h1 = np.zeros((FIR_size, M))
-temp2 = FIR_estimator_ds.Bb
-temp1 = FIR_estimator_ds.Bf
-for i in range(0, FIR_size):
-    h2[i] = np.dot(FIR_estimator_ds.WT, temp2)
-    h1[i] = np.dot(FIR_estimator_ds.WT, -temp1)
-    temp2 = np.dot(FIR_estimator_ds.Ab, temp2)
-    temp1 = np.dot(FIR_estimator_ds.Af, temp1)
-adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", h1)
-adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", h2)
+#h1 = FIR_estimator_ref.h[0][0:FIR_size]
+#h2 = FIR_estimator_ref.h[0][FIR_size:]
+#hb = h2
+#hf = np.zeros((FIR_size, M))
+#for i in range(0, FIR_size):
+#    hf[i] = h1[FIR_size-i-1]
+#adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", hf)
+#adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", hb)
