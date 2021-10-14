@@ -178,7 +178,7 @@ class HardCB:
 			f = max(f, abs((arr[i]-ref[i])/ref[i]))
 		return e, f
 
-	# The offline batch estimator algorithm we measure against
+	# The offline estimator algorithm we measure against
 	def GoldenBatch(self):
 		M = np.zeros((self.N, self.S_Length + 1))
 		result = np.zeros(self.S_Length, float)
@@ -193,7 +193,7 @@ class HardCB:
 			M[:, kk2 - 1] = tempM
 		return result
 
-	# Offline Parallel batch estimator
+	# Offline Parallel estimator
 	def GoldenParallel(self):
 		Mf = np.zeros((self.N, self.S_Length), complex)
 		Mb = np.zeros((self.N, self.S_Length), complex)
@@ -327,6 +327,7 @@ class HardCB:
 		return result
 
 	# Online batch architecture with fixed point numbers
+	# Work in progress
 	def BatchIIRFixed(self, SampleSize):
 		result = np.zeros(self.S_Length, fp.FixedPoint(0, **self.qformat))
 		Reg_Loading = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
