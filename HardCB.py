@@ -13,7 +13,6 @@ class ComplexFixed(complex):
 
 
 class HardCB:
-	def __init__(self) -> None:
 	def __init__(self, M) -> None:
 		self.S = []
 		self.plotFolder = 'plots_32bit'
