@@ -244,22 +244,29 @@ class HardCB:
 		return result
 
 	# Online batch architecture
-	def BatchIIR(self, SampleSize, DownSampFactor = 1):
-		DownSize = int(round(SampleSize/DownSampFactor))
-		result = np.zeros(int(round(self.S_Length/DownSampFactor)), self.floatType)
-		Reg_Loading = np.zeros((self.N,SampleSize), self.floatType)
-		Reg_Lookahead = np.zeros((self.N,SampleSize), self.floatType)
-		M_LH = np.zeros(self.N, self.complexType)
-		Reg_PreComp = np.zeros((self.N,SampleSize), self.floatType)
-		Reg_Compute = np.zeros((self.N,SampleSize), self.floatType)
-		Mb = np.zeros(self.N, self.complexType)
-		Mf = np.zeros(self.N, self.complexType)
-		Reg_PartResultB = np.zeros((self.N,DownSize), self.floatType)
-		Reg_PartResultF = np.zeros((self.N,DownSize), self.floatType)
-		Reg_ResultB = np.zeros((self.N,DownSize), self.floatType)
-		Reg_ResultF = np.zeros((self.N,DownSize), self.floatType)
+	def BatchIIR(self, SampleSize, OSR = 1):
+		DownSize = int(round(SampleSize/OSR))	# length of downsampled memories
+		result = np.zeros(int(round(self.S_Length/OSR)), self.floatType)
+
+		# Recursion registers
+		M_LH = np.zeros(self.N, self.complexType)		# Lookahead register
+		M_B = np.zeros(self.N, self.complexType)		# Backward recursion
+		M_F = np.zeros(self.N, self.complexType)		# Forward recursion
+		S_DF = np.zeros((self.N,OSR))					# Delayed sample for forward recursion
 		M_DF = np.zeros(self.N, self.floatType)
-		M_DB = np.zeros(self.N, self.floatType)
+
+		# Sample memories
+		Reg_Loading = np.zeros((self.N,SampleSize))		# Input cycle
+		Reg_Lookahead = np.zeros((self.N,SampleSize))	# Lookahead cycle
+		Reg_PreComp = np.zeros((self.N,SampleSize))		# Wait cycle
+		Reg_Compute = np.zeros((self.N,SampleSize))		# Compute cycle
+
+		# Part-result storage
+		Reg_PartResultB = np.zeros(DownSize, self.floatType)
+		Reg_PartResultF = np.zeros(DownSize, self.floatType)
+		Reg_ResultB = np.zeros(DownSize, self.floatType)
+		Reg_ResultF = np.zeros(DownSize, self.floatType)
+
 		# Batch cycle
 		for k in range(0, self.S_Length + 4*SampleSize, SampleSize):
 			# Clock cycle i, everything in loop happens in parallel
@@ -271,41 +278,47 @@ class HardCB:
 				except:
 					Reg_Loading[:,i] = np.zeros(self.N)
 				# Downsample clock
-				if (i % DownSampFactor != 0):
+				if (i % OSR != 0):
 					continue
-				id = int(round(i / DownSampFactor))
-				jd = int(np.floor(j / DownSampFactor))
+				id = int(round(i / OSR))
+				jd = int(np.floor(j / OSR))
 				# Calculation
 				for n in range(0, self.N):
 					# Lookahead stage
 					temp = 0
-					for a in range(0,DownSampFactor):
-						temp += np.dot(self.Fb[n,:], Reg_Lookahead[:,j-a]) * (self.Lb[n] ** (DownSampFactor - 1 - a))
-					M_LH[n] = ((self.Lb[n] ** DownSampFactor) * M_LH[n] + temp)
+					for a in range(0,OSR):
+						temp += np.dot(self.Fb[n,:], Reg_Lookahead[:,j-a]) * (self.Lb[n] ** (OSR - 1 - a))
+					M_LH[n] = ((self.Lb[n] ** OSR) * M_LH[n] + temp)
 					if self.complexType == complex: M_LH = self.Complex32(M_LH) 
+
 					# Forward recursion
 					temp = 0
-					for a in range(0,DownSampFactor):
-						temp += np.dot(self.Ff[n,:], Reg_Compute[:,i+a]) * (self.Lf[n] ** (DownSampFactor - 1 - a))
-					Mf[n] = ((self.Lf[n] ** DownSampFactor) * Mf[n] + temp)
-					if self.complexType == complex: Mf = self.Complex32(Mf)
-					Reg_PartResultF[n,id] = M_DF[n]
-					M_DF[n] = (self.Wf[n] * Mf[n]).real
+					for a in range(0,OSR):
+						temp += np.dot(self.Ff[n,:], Reg_Compute[:,i+a]) * (self.Lf[n] ** (OSR - 1 - a))
+						S_DF[:,a] = Reg_Compute[:,i+a]
+					M_F[n] = ((self.Lf[n] ** OSR) * M_F[n] + temp)
+					if self.complexType == complex: M_F = self.Complex32(M_F)
+					Reg_PartResultF[id] += M_DF[n]
+					M_DF[n] = (self.Wf[n] * M_F[n]).real
+
 					# Backward Recursion
 					temp = 0
-					for a in range(0,DownSampFactor):
-						temp += np.dot(self.Fb[n,:], Reg_Compute[:,j-a]) * (self.Lb[n] ** (DownSampFactor - 1 - a))
-					Mb[n] = ((self.Lb[n] ** DownSampFactor) * Mb[n] + temp)
-					if self.complexType == complex: Mb = self.Complex32(Mb)
-					Reg_PartResultB[n,jd] = (self.Wb[n] * Mb[n]).real
-					# Output stage
-					k_delayed = int(round((k - 4*SampleSize) / DownSampFactor))
-					if ((k_delayed >= 0) and (k_delayed+id < int(round(self.S_Length/DownSampFactor)))):
-						result[k_delayed+id] = result[k_delayed+id] + Reg_ResultB[n, id] + Reg_ResultF[n, id]
-			# Propagate registers
+					for a in range(0,OSR):
+						temp += np.dot(self.Fb[n,:], Reg_Compute[:,j-a]) * (self.Lb[n] ** (OSR - 1 - a))
+					M_B[n] = ((self.Lb[n] ** OSR) * M_B[n] + temp)
+					if self.complexType == complex: M_B = self.Complex32(M_B)
+					Reg_PartResultB[jd] += (self.Wb[n] * M_B[n]).real
+					
+				# Output stage
+				k_delayed = int(round((k - 4*SampleSize) / OSR))
+				if ((k_delayed >= 0) and (k_delayed+id < int(round(self.S_Length/OSR)))):
+					result[k_delayed+id] = Reg_ResultB[id] + Reg_ResultF[id]
+			# Propagate registers (not how it's done in hardware)
 			Reg_ResultF = np.array(Reg_PartResultF)
 			Reg_ResultB = np.array(Reg_PartResultB)
-			Mb = np.array(M_LH)
+			Reg_PartResultB = np.zeros(DownSize, self.floatType)
+			Reg_PartResultF = np.zeros(DownSize, self.floatType)
+			M_B = np.array(M_LH)
 			M_LH = np.zeros(self.N, self.complexType)
 			Reg_Compute = np.array(Reg_PreComp)
 			Reg_PreComp = np.array(Reg_Lookahead)
