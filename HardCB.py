@@ -409,19 +409,23 @@ class HardCB:
 	def FIR(self, length, OSR = 1):
 		samples = np.zeros([self.N, length*2])
 		result = np.zeros(int(round(self.S_Length/OSR)), self.floatType)
-		for k in range(0, int(round(self.S_Length/OSR))):
+		for k in range(0, int(self.S_Length)):
 			samples[:, 1:] = samples[:, 0:-1]
 			try:
-				samples[:, 0] = self.S[:, k*OSR]
+				samples[:, 0] = self.S[:, k]
 			except:
 				print("Filling empty sample at time " + str(k))
 				samples[:, 0] = np.zeros(self.N)
+			# Skip calculations when oversampling
+			if k % OSR != 0:
+				continue
+			k_ds = int(k / OSR)
 			# Lookahead
 			for i in range(0, length):
-				result[k] += np.dot(self.hb[i, :], samples[:, length-i-1])
+				result[k_ds] += np.dot(self.hb[i, :], samples[:, length-i-1])
 			# Lookback
 			for i in range(0, length):
-				result[k] += np.dot(self.hf[i, :], samples[:, length+i])
+				result[k_ds] += np.dot(self.hf[i, :], samples[:, length+i])
 		return result
 
 	# Plot a section of the wave
