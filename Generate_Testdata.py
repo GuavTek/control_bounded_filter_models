@@ -46,7 +46,7 @@ print(digital_control)
 # Create band-limiting filter
 gpass = 0.1
 gstop = 80
-filter = cbadc.analog_system.IIRDesign(wp=wp/2, ws=wp, gpass=gpass, gstop=gstop, ftype="ellip")
+filter = cbadc.analog_system.IIRDesign(wp=wp, ws=2*wp, gpass=gpass, gstop=gstop, ftype="ellip")
 
 # Create new analog system with filter
 analog_system_prefiltered = cbadc.analog_system.chain([filter, analog_system])
