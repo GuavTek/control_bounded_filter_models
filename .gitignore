@@ -1,5 +1,7 @@
 *.png
 *.v
+*.sv
+*.csv
 .vscode/
 workspace.code-workspace
 data/Coefficients.h
