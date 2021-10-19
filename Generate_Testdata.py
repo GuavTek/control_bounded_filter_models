@@ -109,7 +109,8 @@ adc.WriteCSVFile("data/FIR1_hf", hf)
 # Write verilog header
 adc.ReadIIRCoefficients('data')
 adc.ReadFIRCoefficients('data', 1)
-adc.WriteVerilogCoefficients('data/Coefficients', 20)
+adc.WriteVerilogIIRCoefficients('data/Coefficients', 20)
+adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR1', 1)
 
 #G_at_omega = np.linalg.norm(analog_system_new.transfer_function_matrix(np.array([wp/2])))
 #eta2 = G_at_omega**2
