@@ -7,10 +7,12 @@ import numpy as np
 N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated test data
-FIR_size = 400          # Number of coefficients generated
+FIR_size = 450          # Number of coefficients generated
 adc = HardCB(M)
 
-f_clk = 250e6           # ADC sampling frequency
+adc.DirectoryCheck('data')
+
+f_clk = 240e6           # ADC sampling frequency
 fu = 20e6               # integrator Unity gain frequency
 fc = 5e6                # Filter cut-off
 kappa = -1.0
@@ -109,38 +111,39 @@ adc.WriteCSVFile("data/FIR1_hf", hf)
 # Write verilog header
 adc.ReadIIRCoefficients('data')
 adc.ReadFIRCoefficients('data', 1)
-adc.WriteVerilogIIRCoefficients('data/Coefficients', 20)
-adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR1', 1)
+adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
-#G_at_omega = np.linalg.norm(analog_system_new.transfer_function_matrix(np.array([wp/2])))
-#eta2 = G_at_omega**2
+G_at_omega = np.linalg.norm(analog_system_prefiltered.transfer_function_matrix(np.array([wp/2])))
+eta2 = G_at_omega**2
 
 # Instantiate FIR filter with downsampling
-#FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_new, digital_control, eta2, L1, L2, downsample=OSR)
-#print(FIR_estimator_ds)
+FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system, digital_control, eta2, L1, L2, downsample=OSR)
+print(FIR_estimator_ds)
 
 # Write coefficients to file
-#h1 = FIR_estimator_ref.h[0][0:FIR_size]
-#h2 = FIR_estimator_ref.h[0][FIR_size:]
-#hb = h2
-#hf = np.zeros((FIR_size, M))
-#for i in range(0, FIR_size):
-#    hf[i] = h1[FIR_size-i-1]
-#adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", hf)
-#adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", hb)
+h1 = FIR_estimator_ds.h[0][0:FIR_size]
+h2 = FIR_estimator_ds.h[0][FIR_size:]
+hb = h2
+hf = np.zeros((FIR_size, M))
+for i in range(0, FIR_size):
+    hf[i] = h1[FIR_size-i-1]
+adc.WriteCSVFile("data/FIR" + str(OSR) + "_hf", hf)
+adc.WriteCSVFile("data/FIR" + str(OSR) + "_hb", hb)
+adc.ReadFIRCoefficients('data', 12)
+adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR12', 12)
 
 ##### Generate Stimuli #####
 
-# Instantiate the analog signal
-analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
-# print to ensure correct parametrization.
-print(analog_signal)
-
 end_time = T * samples_num  # Simulation end
 
+
+# Instantiate the analog signal
+analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
 # Instantiate the simulator.
 simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
                             analog_signal], t_stop=end_time)
+# print to ensure correct parametrization.
+print(analog_signal)
 print(simulator)
 
 tVectors = np.zeros((N, samples_num), int)
