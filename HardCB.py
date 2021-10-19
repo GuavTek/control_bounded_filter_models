@@ -646,9 +646,9 @@ class HardCB:
 			else:
 				f.write("}")
 		f.write("};\n\r")
-		f.write("localparam real " + name + "i[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		f.write("\tlocalparam real " + name + "i[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
 		for i in range(0, self.N):
-			f.write("\t'{")
+			f.write("\t\t'{")
 			for j in range(0, self.N*exponent):
 				if (j > 0):
 					f.write(", ")
