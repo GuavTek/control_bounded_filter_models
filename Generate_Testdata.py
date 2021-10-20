@@ -140,10 +140,10 @@ if plot_reference == 0:
 
     # Write verilog headers
     adc.ReadIIRCoefficients('data')
-    adc.ReadFIRCoefficients('data', 0)
+    adc.ReadFIRCoefficients('data', 'none')
     adc.WriteVerilogCoefficients('data/Coefficients', 20)
 
-    adc.ReadFIRCoefficients('data', 1)
+    adc.ReadFIRCoefficients('data', 'pre')
     adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR_prefilt')
 
     # Format stimuli
