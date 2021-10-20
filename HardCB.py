@@ -140,14 +140,22 @@ class HardCB:
 		self.Wf = self.ReadCoeffFile(folder + '/Wf')
 		self.Wb = self.ReadCoeffFile(folder + '/Wb')
 
-	def ReadFIRCoefficients(self, folder, OSR):
+	# Filters are 'pre' or 'post'
+	def ReadFIRCoefficients(self, folder, filt='none'):
 		try:
-			self.hf = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_hf')
-			self.hb = self.ReadCoeffFile(folder + '/FIR' + str(OSR) + '_hb')
+			if (filt == 0) or (filt == 'none'):
+				self.hf = self.ReadCoeffFile(folder + '/FIR_hf')
+				self.hb = self.ReadCoeffFile(folder + '/FIR_hb')
+			if filt == 'pre':
+				self.hf = self.ReadCoeffFile(folder + '/FIR_hf_prefilt')
+				self.hb = self.ReadCoeffFile(folder + '/FIR_hb_prefilt')
+			if filt == 'post':
+				self.hf = self.ReadCoeffFile(folder + '/FIR_hf_postfilt')
+				self.hb = self.ReadCoeffFile(folder + '/FIR_hb_postfilt')
 			self.hf = np.array(self.hf, self.floatType)
 			self.hb = np.array(self.hb, self.floatType)
 		except:
-			print("Error! Could not find files for given OSR")
+			print("Error! Could not find files")
 			raise SystemExit
 
 	def Complex32(self, var: complex) -> complex:
