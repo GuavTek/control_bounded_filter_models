@@ -3,13 +3,7 @@ import csv
 import numpy as np
 import scipy.linalg as la
 from matplotlib import pyplot as plt
-import fixedpoint as fp
-
-class ComplexFixed(complex):
-	def __init__(self, initVal, **qFormat) -> None:
-		super().__init__()
-		self.real = fp.FixedPoint(initVal.real, **qFormat)
-		self.imag = fp.FixedPoint(initVal.imag, **qFormat)
+import fxpmath as fp
 
 
 class HardCB:
@@ -21,7 +15,7 @@ class HardCB:
 		self.S_Length = 0
 		self.floatType = np.float32
 		self.complexType = np.complex64
-		self.qformat = {'signed': True, 'm': 64, 'n': 64, 'overflow': 'wrap', 'rounding': 'down', 'overflow_alert': 'warning'}
+		self.fxpFormat = 'fxp-s32/16-complex'
 		self.N = M
 		pass
 
@@ -164,7 +158,7 @@ class HardCB:
 		return var
 		
 	def SetFixedBitWidth(self, intBits, fracBits):
-		self.qformat = {'signed': True, 'm': intBits, 'n': fracBits, 'overflow': 'wrap', 'rounding': 'down', 'overflow_alert': 'warning'}
+		self.qformat = f'fxp-s{intBits+fracBits}/{fracBits}-complex'
 
 	def SetFloatBitWidth(self, width):
 		if width == 16:
@@ -336,21 +330,42 @@ class HardCB:
 
 	# Online batch architecture with fixed point numbers
 	# Work in progress
-	def BatchIIRFixed(self, SampleSize):
-		result = np.zeros(self.S_Length, fp.FixedPoint(0, **self.qformat))
-		Reg_Loading = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Reg_Lookahead = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		M_LH = np.zeros(self.N, self.complexType)
-		Reg_PreComp = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Reg_Compute = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Mb = np.zeros(self.N, self.complexType)
-		Mf = np.zeros(self.N, self.complexType)
-		Reg_PartResultB = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Reg_PartResultF = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Reg_ResultB = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		Reg_ResultF = np.zeros((self.N,SampleSize), fp.FixedPoint(0, **self.qformat))
-		M_DF = np.zeros(self.N, fp.FixedPoint(0, **self.qformat))
-		M_DB = np.zeros(self.N, fp.FixedPoint(0, **self.qformat))
+	def BatchIIRFixed(self, SampleSize, OSR = 1):
+		DownSize = int(round(SampleSize/OSR))	# length of downsampled memories
+		result = fp.Fxp(np.zeros(int(round(self.S_Length/OSR)), self.floatType), dtype=self.fxpFormat)
+
+		# Constants
+		tempLf = np.zeros((self.N, OSR + 1), dtype=complex)
+		tempLb = np.zeros((self.N, OSR + 1), dtype=complex)
+		for n in range(0, self.N):
+			for i in range(0, OSR+1):
+				tempLf[n,i] = self.Lf[n] ** (i)
+				tempLb[n,i] = self.Lb[n] ** (i)
+		Lb = fp.Fxp(tempLb, dtype=self.fxpFormat)
+		Lf = fp.Fxp(tempLf, dtype=self.fxpFormat)
+		Wb = fp.Fxp(self.Wb, dtype=self.fxpFormat)
+		Wf = fp.Fxp(self.Wf, dtype=self.fxpFormat)
+		Ff = fp.Fxp(self.Ff, dtype=self.fxpFormat)
+		Fb = fp.Fxp(self.Fb, dtype=self.fxpFormat)
+
+		# Recursion registers
+		M_LH = fp.Fxp(np.zeros(self.N, self.complexType), dtype=self.fxpFormat)		# Lookahead register
+		M_B = fp.Fxp(np.zeros(self.N, self.complexType), dtype=self.fxpFormat)		# Backward recursion
+		M_F = fp.Fxp(np.zeros(self.N, self.complexType), dtype=self.fxpFormat)		# Forward recursion
+		S_DF = fp.Fxp(np.zeros((self.N,OSR)), dtype=self.fxpFormat)					# Delayed sample for forward recursion
+
+		# Sample memories
+		Reg_Loading = np.zeros((self.N,SampleSize))		# Input cycle
+		Reg_Lookahead = np.zeros((self.N,SampleSize))	# Lookahead cycle
+		Reg_PreComp = np.zeros((self.N,SampleSize))		# Wait cycle
+		Reg_Compute = np.zeros((self.N,SampleSize))		# Compute cycle
+
+		# Part-result storage
+		Reg_PartResultB = fp.Fxp(np.zeros(DownSize, self.floatType), dtype=self.fxpFormat)
+		Reg_PartResultF = fp.Fxp(np.zeros(DownSize, self.floatType), dtype=self.fxpFormat)
+		Reg_ResultB = fp.Fxp(np.zeros(DownSize, self.floatType), dtype=self.fxpFormat)
+		Reg_ResultF = fp.Fxp(np.zeros(DownSize, self.floatType), dtype=self.fxpFormat)
+
 		# Batch cycle
 		for k in range(0, self.S_Length + 4*SampleSize, SampleSize):
 			# Clock cycle i, everything in loop happens in parallel
@@ -361,29 +376,55 @@ class HardCB:
 					Reg_Loading[:,i] = self.S[:,k+i]
 				except:
 					Reg_Loading[:,i] = np.zeros(self.N)
+				# Downsample clock
+				if (i % OSR != 0):
+					continue
+				id = int(round(i / OSR))
+				jd = int(np.floor(j / OSR))
 				# Calculation
 				for n in range(0, self.N):
 					# Lookahead stage
-					M_LH[n] = (self.Lb[n] * M_LH[n] + np.dot(self.Fb[n,:], Reg_Lookahead[:,j]))
-					if self.complexType == complex: M_LH = self.Complex32(M_LH) 
+					temp = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+					for a in range(0,OSR):
+						tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+						for b in range(0, self.N):
+							tempDot += Fb[n,b] * Reg_Lookahead[b,j-a]
+						temp += tempDot * Lb[n,OSR-1-a]
+					M_LH[n] = Lb[n, OSR] * M_LH[n] + temp
+
 					# Forward recursion
-					Mf[n] = (self.Lf[n] * Mf[n] + np.dot(self.Ff[n,:], Reg_Compute[:,i]))
-					if self.complexType == complex: Mf = self.Complex32(Mf)
-					Reg_PartResultF[n,i] = M_DF[n]
-					M_DF[n] = (self.Wf[n] * Mf[n]).real
+					temp = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+					for a in range(0,OSR):
+						tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+						for b in range(0, self.N):
+							tempDot += Ff[n,b] * S_DF[b,a]
+						temp += tempDot * Lf[n,OSR-1-a]
+					M_F[n] = Lf[n, OSR] * M_F[n] + temp
+					Reg_PartResultF[id] += (Wf[n] * M_F[n]).real
+
 					# Backward Recursion
-					Mb[n] = (self.Lb[n] * Mb[n] + np.dot(self.Fb[n,:], Reg_Compute[:,j]))
-					if self.complexType == complex: Mb = self.Complex32(Mb)
-					Reg_PartResultB[n,j] = (self.Wb[n] * Mb[n]).real
-					# Output stage
-					k_delayed = k - 4*SampleSize
-					if ((k_delayed >= 0) and (k_delayed+i < self.S_Length)):
-						result[k_delayed+i] = result[k_delayed+i] + Reg_ResultB[n, i] + Reg_ResultF[n, i]
-			# Propagate registers
-			Reg_ResultF = np.array(Reg_PartResultF)
-			Reg_ResultB = np.array(Reg_PartResultB)
-			Mb = np.array(M_LH)
-			M_LH = np.zeros(self.N, self.complexType)
+					temp = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+					for a in range(0,OSR):
+						tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+						for b in range(0, self.N):
+							tempDot += Fb[n,b] * Reg_Compute[b,j-a]
+						temp += tempDot * Lb[n,OSR-1-a]
+					M_B[n] = Lb[n, OSR] * M_B[n] + temp
+					Reg_PartResultB[jd] += (Wb[n] * M_B[n]).real
+				
+				# Save forward samples
+				for a in range(0,OSR):
+					S_DF[:,a] = Reg_Compute[:,i+a]
+
+				# Output stage
+				k_delayed = int(round((k - 4*SampleSize) / OSR))
+				if ((k_delayed >= 0) and (k_delayed+id < int(round(self.S_Length/OSR)))):
+					result[k_delayed+id] = Reg_ResultB[id] + Reg_ResultF[id]
+			# Propagate registers (not how it's done in hardware)
+			Reg_ResultF = Reg_PartResultF
+			Reg_ResultB = Reg_PartResultB # fp.Fxp(Reg_PartResultB, dtype=self.fxpFormat)
+			M_B = M_LH ##fp.Fxp(M_LH, dtype=self.fxpFormat)
+			M_LH = fp.Fxp(np.zeros(self.N, self.complexType), dtype=self.fxpFormat)  
 			Reg_Compute = np.array(Reg_PreComp)
 			Reg_PreComp = np.array(Reg_Lookahead)
 			Reg_Lookahead = np.array(Reg_Loading)
