@@ -687,6 +687,14 @@ class HardCB:
 			f.write(str(data[i]))
 		f.write("};\n\r")
 
+	def WriteVerilog1D_Fixedpoint (self, f, name, data, bias):
+		f.write("\tlocalparam logic[63:0] " + name + "[0:%d] = {" %(np.size(data)-1))
+		for i in range(0, np.size(data)):
+			if (i > 0):
+				f.write(", ")
+			f.write(str(int(round(data[i] * 2.0**bias))))
+		f.write("};\n\r")
+
 	def WriteVerilog2D (self, f, name, data):
 		f.write("\tlocalparam real " + name + "r[0:%d][0:%d] = {\n" %((self.N-1),(self.N-1)))
 		for i in range(0, self.N):
@@ -745,6 +753,38 @@ class HardCB:
 				f.write("}")
 		f.write("};\n\r")
 
+	def WriteVerilog2DExtended_Fixedpoint (self, f, name, data, expData, exponent, bias):
+		# Prepare extended data
+		tempData = np.zeros((self.N, self.N*exponent), np.complex128)
+		for i in range(0, exponent):
+			for j in range(0,self.N):
+				for k in range(0,self.N):
+					tempData[j][i*self.N + k] = data[j][k] * expData[j]**i
+		f.write("\tlocalparam logic[63:0] " + name + "r[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		for i in range(0, self.N):
+			f.write("\t\t'{")
+			for j in range(0, self.N*exponent):
+				if (j > 0):
+					f.write(", ")
+				f.write(str(int(round( tempData[i][j].real * 2.0**bias ))))
+			if (i < self.N-1):
+				f.write("},\n")
+			else:
+				f.write("}")
+		f.write("};\n\r")
+		f.write("\tlocalparam logic[63:0] " + name + "i[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		for i in range(0, self.N):
+			f.write("\t\t'{")
+			for j in range(0, self.N*exponent):
+				if (j > 0):
+					f.write(", ")
+				f.write(str(int(round( tempData[i][j].imag * 2.0**bias ))))
+			if (i < self.N-1):
+				f.write("},\n")
+			else:
+				f.write("}")
+		f.write("};\n\r")
+
 	def WriteVerilogCoefficients(self, fileName, exponent):
 		f = open(fileName + '.sv', 'w')
 		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
@@ -766,11 +806,32 @@ class HardCB:
 		f.write("\n\r")
 		f.close()
 
-	def WriteVerilogFIRCoefficients(self, fileName, OSR):
+	def WriteVerilogCoefficients_Fixedpoint(self, fileName, exponent, bias):
 		f = open(fileName + '.sv', 'w')
 		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
 		f.write("package Coefficients;\r\n")
-		f.write("// OSR = " + str(OSR))
+		f.write("\tlocalparam N = " + str(self.N) + ";\n")
+		f.write("\tlocalparam COEFF_BIAS = " + str(bias) + ";\n")
+		self.WriteVerilog1D_Fixedpoint(f, "Lfr", self.Lf.real.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Lfi", self.Lf.imag.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Lbr", self.Lb.real.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Lbi", self.Lb.imag.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Wfr", self.Wf.real.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Wfi", self.Wf.imag.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Wbr", self.Wb.real.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "Wbi", self.Wb.imag.flatten(), bias)
+		self.WriteVerilog2DExtended_Fixedpoint(f, "Ff", self.Ff, self.Lf, exponent, bias)
+		self.WriteVerilog2DExtended_Fixedpoint(f, "Fb", self.Fb, self.Lb, exponent, bias)
+		self.WriteVerilog1D_Fixedpoint(f, "hf", self.hf.flatten(), bias)
+		self.WriteVerilog1D_Fixedpoint(f, "hb", self.hb.flatten(), bias)
+		f.write("\rendpackage\n`endif")
+		f.write("\n\r")
+		f.close()
+
+	def WriteVerilogFIRCoefficients(self, fileName):
+		f = open(fileName + '.sv', 'w')
+		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
+		f.write("package Coefficients;\r\n")
 		f.write("\tlocalparam N = " + str(self.N) + ";\n")
 		self.WriteVerilog1D(f, "hf", self.hf.flatten())
 		self.WriteVerilog1D(f, "hb", self.hb.flatten())

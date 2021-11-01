@@ -142,6 +142,7 @@ if plot_reference == 0:
     adc.ReadIIRCoefficients('data')
     adc.ReadFIRCoefficients('data', 'none')
     adc.WriteVerilogCoefficients('data/Coefficients', 20)
+    adc.WriteVerilogCoefficients_Fixedpoint('data/Coefficients_Fixed', 20, 48)
 
     adc.ReadFIRCoefficients('data', 'pre')
     adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR_prefilt')
