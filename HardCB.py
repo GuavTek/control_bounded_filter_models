@@ -688,7 +688,7 @@ class HardCB:
 		f.write("};\n\r")
 
 	def WriteVerilog1D_Fixedpoint (self, f, name, data, bias):
-		f.write("\tlocalparam logic[63:0] " + name + "[0:%d] = {" %(np.size(data)-1))
+		f.write("\tlocalparam logic signed[63:0] " + name + "[0:%d] = {" %(np.size(data)-1))
 		for i in range(0, np.size(data)):
 			if (i > 0):
 				f.write(", ")
@@ -760,7 +760,7 @@ class HardCB:
 			for j in range(0,self.N):
 				for k in range(0,self.N):
 					tempData[j][i*self.N + k] = data[j][k] * expData[j]**i
-		f.write("\tlocalparam logic[63:0] " + name + "r[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		f.write("\tlocalparam logic signed[63:0] " + name + "r[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
 		for i in range(0, self.N):
 			f.write("\t\t'{")
 			for j in range(0, self.N*exponent):
@@ -772,7 +772,7 @@ class HardCB:
 			else:
 				f.write("}")
 		f.write("};\n\r")
-		f.write("\tlocalparam logic[63:0] " + name + "i[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
+		f.write("\tlocalparam logic signed[63:0] " + name + "i[0:%d][0:%d] = '{\n" %((self.N-1),(self.N*exponent-1)))
 		for i in range(0, self.N):
 			f.write("\t\t'{")
 			for j in range(0, self.N*exponent):
