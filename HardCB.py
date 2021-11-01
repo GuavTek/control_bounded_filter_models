@@ -368,6 +368,7 @@ class HardCB:
 
 		# Batch cycle
 		for k in range(0, self.S_Length + 4*SampleSize, SampleSize):
+			print('k = ' + str(k))
 			# Clock cycle i, everything in loop happens in parallel
 			for i in range(0, SampleSize):
 				j = SampleSize - i - 1
@@ -433,26 +434,62 @@ class HardCB:
 	# Experimental architecture with reversed sample order for backward recursion
 	# Becomes unstable when a rounding error occurs
 	def CumulativeIIR(self, lookahead):
+		# Constants
+		Lb = fp.Fxp(self.Lb, dtype=self.fxpFormat)
+		sumLb = fp.Fxp(self.Lb**(lookahead-1), dtype=self.fxpFormat)
+		subLb = fp.Fxp(self.Lb, dtype=self.fxpFormat)
+		Lf = fp.Fxp(self.Lf, dtype=self.fxpFormat)
+		Wb = fp.Fxp(self.Wb, dtype=self.fxpFormat)
+		Wf = fp.Fxp(self.Wf, dtype=self.fxpFormat)
+		Ff = fp.Fxp(self.Ff, dtype=self.fxpFormat)
+		Fb = fp.Fxp(self.Fb, dtype=self.fxpFormat)
+		tempLb_inv = np.zeros(self.N, dtype=complex)
+		tempSubFb = np.zeros((self.N, self.N), dtype=complex)
+		for i in range(0,self.N):
+			tempLb_inv[i] = 1/self.Lb[i]
+			tempSubFb[i,:] = tempLb_inv[i] * self.Fb[i,:]
+		subFb = fp.Fxp(tempSubFb, dtype=self.fxpFormat) 
+		Lb_inv = fp.Fxp(tempLb_inv, dtype=self.fxpFormat)		#Inverted reverse lambda coeff
+
+		# Samples
 		s_buff = np.zeros((self.N, lookahead))
-		Mb = np.zeros(self.N, ComplexFixed(0, **self.qformat))
-		Mf = np.zeros(self.N, ComplexFixed(0, **self.qformat))
-		result = np.zeros(self.S_Length, fp.FixedPoint(0, **self.qformat))
-		Lb_inv = (np.array([1/self.Lb[0], 1/self.Lb[1], 1/self.Lb[2]]))		#Inverted reverse lambda coeff
+
+		# Internal storage
+		Mb = fp.Fxp(np.zeros(self.N), dtype=self.fxpFormat)
+		Mf = fp.Fxp(np.zeros(self.N), dtype=self.fxpFormat)
+
+		result = fp.Fxp(np.zeros(self.S_Length), dtype=self.fxpFormat)
+		
+		# Timestep k
 		for k in range(0, self.S_Length):
+			if k % 100 == 0:
+				print('k = ' + str(k))
 			# Sample shift register
-			s_buff[:, 1:lookahead-1] = s_buff[:, 0:lookahead-2]
+			s_buff[:, 1:] = s_buff[:, :-1]
 			try:
 				s_buff[:,0] = self.S[:,k]
 			except:
+				print('Writing blank sample at time ' + str(k))
 				s_buff[:,0] = np.zeros(self.N)
 			
 			for n in range(0, self.N):
-				Mb[n] = (self.Lb[n]**(lookahead-1) * np.dot(self.Fb[n,:], s_buff[:,0])) + (Lb_inv[n] * Mb[n])
+				tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+				for b in range(0, self.N):
+					tempDot += Fb[n,b] * s_buff[b,0]
+				Mb[n] = (sumLb[n] * tempDot) + (Lb_inv[n] * Mb[n])
 				if(lookahead > k):
 					continue
-				Mb[n] = Mb[n] - (Lb_inv[n] * np.dot(self.Fb[n,:], s_buff[:,lookahead-1]))
-				Mf[n] = (self.Lf[n] * Mf[n] + np.dot(self.Ff[n,:], s_buff[:,lookahead-1]))
-				result[k-lookahead] = result[k-lookahead] + (self.Wf[n] * Mf[n]).real + (self.Wb[n] * Mb[n]).real
+
+				tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+				for b in range(0, self.N):
+					tempDot += subFb[n,b] * s_buff[b,lookahead-1]
+				Mb[n] -= (Lb_inv[n] * tempDot)
+
+				tempDot = fp.Fxp(0.0+0.0j, dtype=self.fxpFormat)
+				for b in range(0, self.N):
+					tempDot += Ff[n,b] * s_buff[b,lookahead-1]
+				Mf[n] = (Lf[n] * Mf[n] + tempDot)
+				result[k-lookahead] += (Wf[n] * Mf[n]).real + (Wb[n] * Mb[n]).real
 		return result
 
 	def FIR(self, length, OSR = 1):

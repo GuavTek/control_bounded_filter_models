@@ -8,7 +8,7 @@ step = 25
 
 adc = HardCB(4)
 adc.f_clk = 240e6
-adc.SetFixedBitWidth(1, 16)
+adc.SetFixedBitWidth(8, 16)
 adc.SetPlotDirectory('fixed_plot')
 adc.ReadOfflineFiles('data')
 adc.ReadIIRCoefficients('data')
