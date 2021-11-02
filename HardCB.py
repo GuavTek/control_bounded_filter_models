@@ -692,7 +692,9 @@ class HardCB:
 		for i in range(0, np.size(data)):
 			if (i > 0):
 				f.write(", ")
-			f.write(str(int(round(data[i] * 2.0**bias))))
+			if data[i] < 0:
+				f.write("- ")
+			f.write( "64'd" + str(int(round(abs(data[i]) * 2.0**bias))) )
 		f.write("};\n\r")
 
 	def WriteVerilog2D (self, f, name, data):
@@ -766,7 +768,9 @@ class HardCB:
 			for j in range(0, self.N*exponent):
 				if (j > 0):
 					f.write(", ")
-				f.write(str(int(round( tempData[i][j].real * 2.0**bias ))))
+				if tempData[i][j].real < 0:
+					f.write("- ")
+				f.write( "64'd" + str(int(round( abs(tempData[i][j].real) * 2.0**bias ))) )
 			if (i < self.N-1):
 				f.write("},\n")
 			else:
@@ -778,7 +782,9 @@ class HardCB:
 			for j in range(0, self.N*exponent):
 				if (j > 0):
 					f.write(", ")
-				f.write(str(int(round( tempData[i][j].imag * 2.0**bias ))))
+				if tempData[i][j].imag < 0:
+					f.write("- ")
+				f.write( "64'd" + str(int(round( abs(tempData[i][j].imag) * 2.0**bias ))) )
 			if (i < self.N-1):
 				f.write("},\n")
 			else:
