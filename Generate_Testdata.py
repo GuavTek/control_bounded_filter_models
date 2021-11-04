@@ -58,7 +58,7 @@ filter = cbadc.analog_system.IIRDesign(wp=wp, ws=2*wp, gpass=gpass, gstop=gstop,
 analog_system_prefiltered = cbadc.analog_system.chain([filter, analog_system])
 print(analog_system_prefiltered)
 
-G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wp/2])))
+G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wp])))
 eta2 = G_at_omega**2
 
 # Initialize estimator
@@ -73,7 +73,7 @@ L2 = FIR_size
 FIR_estimator_ref = cbadc.digital_estimator.FIRFilter(analog_system, digital_control, eta2, L1, L2)
 print(FIR_estimator_ref)
 
-G_at_omega = np.linalg.norm(analog_system_prefiltered.transfer_function_matrix(np.array([wp/2])))
+G_at_omega = np.linalg.norm(analog_system_prefiltered.transfer_function_matrix(np.array([wp])))
 eta2 = G_at_omega**2
 
 # Instantiate FIR filter with downsampling
