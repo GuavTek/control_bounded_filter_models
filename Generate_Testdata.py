@@ -13,7 +13,7 @@ plot_reference = 0
 N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated stmuli
-FIR_size = 600          # Number of coefficients generated
+FIR_size = 400          # Number of coefficients generated
 adc = HardCB(M)
 
 adc.DirectoryCheck('data')
@@ -43,12 +43,10 @@ gammaVec = kappa * beta * np.eye(N)
 
 # Instantiate a leapfrog analog system.
 analog_system = cbadc.analog_system.LeapFrog(betaVec, rhoVec, gammaVec)
-# print the analog system such that we can very it being correctly initalized.
 print(analog_system)
 
 # Initialize the digital control.
 digital_control = cbadc.digital_control.DigitalControl(T, M)
-# print the digital control to verify proper initialization.
 print(digital_control)
 
 # Create band-limiting filter
@@ -63,13 +61,9 @@ print(analog_system_prefiltered)
 G_at_omega = np.linalg.norm(analog_system.transfer_function_matrix(np.array([wp/2])))
 eta2 = G_at_omega**2
 
-##### Generate IIR coefficients #####
-
 # Initialize estimator
 digital_estimator = cbadc.digital_estimator.ParallelEstimator(analog_system, digital_control, eta2, samples_num)
 print(digital_estimator)
-
-##### Generate FIR coefficients #####
 
 # Prepare FIR parameters
 L1 = FIR_size
@@ -86,16 +80,15 @@ eta2 = G_at_omega**2
 FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_prefiltered, digital_control, eta2, L1, L2, downsample=OSR)
 print(FIR_estimator_ds)
 
-##### Generate Stimuli #####
-
 end_time = T * samples_num  # Simulation end
-
 
 # Instantiate the analog signal
 analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
+
 # Instantiate the simulator.
 simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
                             analog_signal], t_stop=end_time)
+
 # print to ensure correct parametrization.
 print(analog_signal)
 print(simulator)
@@ -142,7 +135,7 @@ if plot_reference == 0:
     adc.ReadIIRCoefficients('data')
     adc.ReadFIRCoefficients('data', 'none')
     adc.WriteVerilogCoefficients('data/Coefficients', 20)
-    adc.WriteVerilogCoefficients_Fixedpoint('data/Coefficients_Fixed', 20, 48)
+    adc.WriteVerilogCoefficients_Fixedpoint('data/Coefficients_Fixedpoint', 20, 48)
 
     adc.ReadFIRCoefficients('data', 'pre')
     adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR_prefilt')
