@@ -7,7 +7,7 @@ import fxpmath as fp
 
 
 class HardCB:
-	def __init__(self, M) -> None:
+	def __init__(self, N, M) -> None:
 		self.S = []
 		self.plotFolder = 'plots_32bit'
 		self.f_clk = 500e6
@@ -16,7 +16,8 @@ class HardCB:
 		self.floatType = np.float32
 		self.complexType = np.complex64
 		self.fxpFormat = 'fxp-s32/16-complex'
-		self.N = M
+		self.N = N
+		self.M = M
 		pass
 
 	def SetSystemOrder(self, orderN):
