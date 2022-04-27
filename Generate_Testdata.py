@@ -1,32 +1,35 @@
 from cbadc.digital_estimator import DigitalEstimator
 from HardCB import *
 import cbadc
+import scipy
 import numpy as np
 
 # 0 == write files
 # 1 == reference FIR
 # 2 == reference IIR
 # 3 == downsampled FIR with prefilter
-# 4 == downsampled FIR no prefilter
+# 4 == downsampled FIR with postfilter
+# 5 == downsampled FIR no filter
 plot_reference = 0
 
 N = 4   # Analog states
 M = N   # Digital states
 samples_num = 24000     # Length of generated stmuli
-FIR_size = 400          # Number of coefficients generated
-adc = HardCB(M)
+FIR_size = 300          # Number of coefficients generated
+adc = HardCB(N,M)
 
 adc.DirectoryCheck('data')
 
-f_clk = 240e6           # ADC sampling frequency
+f_clk = 960e6           # ADC sampling frequency
 fu = 20e6               # integrator Unity gain frequency
 fc = 5e6                # Filter cut-off
 kappa = -1.0
-OSR = 12                # Oversampling ratio
+OSR = 6                # Oversampling ratio
 
 # Input signal
-amplitude = 0.8
-fs = 500e3
+amplitude = 0.99
+fs = 2e6
+shape = 'sine'    # sine / ramp / dc
 
 T = 1.0/f_clk
 beta = 1/(2*T)
@@ -73,24 +76,31 @@ L2 = FIR_size
 FIR_estimator_ref = cbadc.digital_estimator.FIRFilter(analog_system, digital_control, eta2, L1, L2)
 print(FIR_estimator_ref)
 
-G_at_omega = np.linalg.norm(analog_system_prefiltered.transfer_function_matrix(np.array([wp])))
-eta2 = G_at_omega**2
+# Instantiate FIR filter
+FIR_estimator_pre = cbadc.digital_estimator.FIRFilter(analog_system_prefiltered, digital_control, eta2, L1, L2, downsample=OSR)
+print(FIR_estimator_pre)
 
-# Instantiate FIR filter with downsampling
-FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system_prefiltered, digital_control, eta2, L1, L2, downsample=OSR)
-print(FIR_estimator_ds)
+postFilter = scipy.signal.firwin(1 << 10, 1.0/OSR)
+FIR_estimator_post = cbadc.digital_estimator.FIRFilter(analog_system, digital_control, eta2, L1, L2, downsample=OSR)
+FIR_estimator_post.convolve(postFilter)
+print(FIR_estimator_post)
 
 end_time = T * samples_num  # Simulation end
 
 # Instantiate the analog signal
-analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
+if shape == 'ramp':
+    analog_signal = cbadc.analog_signal.Ramp(amplitude, 1/fs)
+elif shape == 'dc':
+    analog_signal = cbadc.analog_signal.ConstantSignal(amplitude)
+else:
+    analog_signal = cbadc.analog_signal.Sinusodial(amplitude, fs)
 
 # Instantiate the simulator.
 simulator = cbadc.simulator.StateSpaceSimulator(analog_system, digital_control, [
                             analog_signal], t_stop=end_time)
 
 # print to ensure correct parametrization.
-print(analog_signal)
+#print(analog_signal)
 print(simulator)
 
 # Write files
@@ -122,8 +132,8 @@ if plot_reference == 0:
     adc.WriteCSVFile("data/FIR_hf", hf_ref)
 
     # Write FIR Coefficients with prefilter
-    h1 = FIR_estimator_ds.h[0][0:FIR_size]
-    h2 = FIR_estimator_ds.h[0][FIR_size:]
+    h1 = FIR_estimator_pre.h[0][0:FIR_size]
+    h2 = FIR_estimator_pre.h[0][FIR_size:]
     hb_ds = h2
     hf_ds = np.zeros((FIR_size, M))
     for i in range(0, FIR_size):
@@ -131,14 +141,30 @@ if plot_reference == 0:
     adc.WriteCSVFile("data/FIR_hf_prefilt", hf_ds)
     adc.WriteCSVFile("data/FIR_hb_prefilt", hb_ds)
 
+    # Write FIR Coefficients with postfilter
+    h1 = FIR_estimator_post.h[0][0:FIR_size]
+    h2 = FIR_estimator_post.h[0][FIR_size:]
+    hb_ds = h2
+    hf_ds = np.zeros((FIR_size, M))
+    for i in range(0, FIR_size):
+        hf_ds[i] = h1[FIR_size-i-1]
+    adc.WriteCSVFile("data/FIR_hf_postfilt", hf_ds)
+    adc.WriteCSVFile("data/FIR_hb_postfilt", hb_ds)
+
+
     # Write verilog headers
     adc.ReadIIRCoefficients('data')
     adc.ReadFIRCoefficients('data', 'none')
-    adc.WriteVerilogCoefficients('data/Coefficients', 20)
-    adc.WriteVerilogCoefficients_Fixedpoint('data/Coefficients_Fixedpoint', 20, 48)
+    adc.WriteVerilogCoefficients(f'data/Coefficients_{N}N{M}M_F{int(round(f_clk/1e6))}', 20)
+    adc.WriteVerilogCoefficients_Fixedpoint(f'data/Coefficients_Fxp_{N}N{M}M_F{int(round(f_clk/1e6))}', 20, 48)
 
     adc.ReadFIRCoefficients('data', 'pre')
-    adc.WriteVerilogFIRCoefficients('data/Coefficients_FIR_prefilt')
+    adc.WriteVerilogFIRCoefficients(f'data/Coefficients_FIR_prefilt_{N}N{M}M_F{int(round(f_clk/1e6))}')
+    adc.WriteVerilogCoefficients_Fixedpoint(f'data/Coefficients_FxPre_{N}N{M}M_F{int(round(f_clk/1e6))}', 20, 48)
+
+    adc.ReadFIRCoefficients('data', 'post')
+    adc.WriteVerilogFIRCoefficients(f'data/Coefficients_FIR_postfilt_{N}N{M}M_F{int(round(f_clk/1e6))}')
+    adc.WriteVerilogCoefficients_Fixedpoint(f'data/Coefficients_FxPost_{N}N{M}M_F{int(round(f_clk/1e6))}', 20, 48)
 
     # Format stimuli
     tVectors = np.zeros((N, samples_num), int)
@@ -154,10 +180,10 @@ if plot_reference == 0:
         x += 1
 
     # Write stimuli files
-    adc.WriteCSVFile("data/clean_signals", tVectors)
-    adc.ReadStimuliFile("data/clean_signals")
-    adc.WriteCSVFile('data/hardware_signals', adc.GetHardwareStimuli())
-    adc.WriteVerilogStimuli('data/verilog_signals')
+    adc.WriteCSVFile(f"data/clean_signals_{N}N{M}M_F{int(round(f_clk/1e6))}", tVectors)
+    adc.ReadStimuliFile(f"data/clean_signals_{N}N{M}M_F{int(round(f_clk/1e6))}")
+    adc.WriteCSVFile(f'data/hardware_signals_{N}N{M}M_F{int(round(f_clk/1e6))}', adc.GetHardwareStimuli())
+    adc.WriteVerilogStimuli(f'data/verilog_signals_{N}N{M}M_F{int(round(f_clk/1e6))}')
 
 if plot_reference != 0:
     adc.SetPlotDirectory('cbadc_plot')
@@ -189,17 +215,28 @@ if plot_reference == 2:
 
 # Plot results from FIR estimator with downsampling and prefiltering
 if plot_reference == 3:
-    FIR_estimator_ds(simulator)
+    FIR_estimator_pre(simulator)
     u_ds = []
-    for result in FIR_estimator_ds:
+    for result in FIR_estimator_pre:
         u_ds.append(result)
     u_ds = np.array(u_ds)
     u_ds = u_ds.flatten()
 
-    adc.PlotFigure(u_ds[int(1920/OSR):-int(1920/OSR)+1], int(960/OSR), "FIR Estimator Reference " + str(FIR_size) + " coefficients, OSR=" + str(OSR), "cbadc_FIR" + str(FIR_size) + "_OSR" + str(OSR))
+    adc.PlotFigure(u_ds[int(1920/OSR):-int(1920/OSR)+1], int(960/OSR), "FIR Estimator prefilter Reference " + str(FIR_size) + " coefficients, OSR=" + str(OSR), "cbadc_FIRPre" + str(FIR_size) + "_OSR" + str(OSR))
 
-# Plot results from FIR estimator with downsampling, without prefiltering
+# Plot results from FIR estimator with downsampling and postfiltering
 if plot_reference == 4:
+    FIR_estimator_post(simulator)
+    u_ds = []
+    for result in FIR_estimator_post:
+        u_ds.append(result)
+    u_ds = np.array(u_ds)
+    u_ds = u_ds.flatten()
+
+    adc.PlotFigure(u_ds[int(1920/OSR):-int(1920/OSR)+1], int(960/OSR), "FIR Estimator postfilter Reference " + str(FIR_size) + " coefficients, OSR=" + str(OSR), "cbadc_FIRPost" + str(FIR_size) + "_OSR" + str(OSR))
+
+# Plot results from FIR estimator with downsampling, without extra filtering
+if plot_reference == 5:
     FIR_estimator_ds = cbadc.digital_estimator.FIRFilter(analog_system, digital_control, eta2, L1, L2, downsample=OSR)
     FIR_estimator_ds(simulator)
     u_ds = []
@@ -208,7 +245,6 @@ if plot_reference == 4:
     u_ds = np.array(u_ds)
     u_ds = u_ds.flatten()
 
-    adc.PlotFigure(u_ds[int(1920/OSR):-int(1920/OSR)+1], int(960/OSR), "FIR Estimator unfiltered Reference " + str(FIR_size) + " coefficients, OSR=" + str(OSR), "cbadc_FIR" + str(FIR_size) + "_OSRUF" + str(OSR))
+    adc.PlotFigure(u_ds[int(1920/OSR):-int(1920/OSR)+1], int(960/OSR), "FIR Estimator unfiltered Reference " + str(FIR_size) + " coefficients, OSR=" + str(OSR), "cbadc_FIR" + str(FIR_size) + "_OSR" + str(OSR))
 
-# Plot results with postfiltering...
 
