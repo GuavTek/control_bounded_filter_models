@@ -4,6 +4,7 @@ import numpy as np
 import scipy.linalg as la
 from matplotlib import pyplot as plt
 import fxpmath as fp
+from typing import Literal
 
 
 class HardCB:
@@ -136,7 +137,7 @@ class HardCB:
 		self.Wb = self.ReadCoeffFile(folder + '/Wb')
 
 	# Filters are 'pre' or 'post'
-	def ReadFIRCoefficients(self, folder, filt='none'):
+	def ReadFIRCoefficients(self, folder, filt: Literal['none', 'pre', 'post']='none'):
 		try:
 			if (filt == 0) or (filt == 'none'):
 				self.hf = self.ReadCoeffFile(folder + '/FIR_hf')
