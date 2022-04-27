@@ -4,5 +4,5 @@
 Using the models:</p>
 <ol>
 <li>Run Generate_Testdata.py to create the filter coefficients and stimuli</li>
-<li>Run Test_SNR_***.py to plot results from the architectures</li>
+<li>Run Test_SNR_***.py to plot results from the architectures (currently broken)</li>
 </ol>
