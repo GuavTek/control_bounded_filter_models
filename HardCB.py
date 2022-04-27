@@ -726,7 +726,7 @@ class HardCB:
 
 	def WriteVerilog2DExtended (self, f, name, data, expData, exponent):
 		# Prepare extended data
-		tempData = np.zeros((self.N, self.N*exponent), np.complex128)
+		tempData = np.zeros((self.N, self.N*exponent), np.complex64)
 		for i in range(0, exponent):
 			for j in range(0,self.N):
 				for k in range(0,self.N):
@@ -797,18 +797,18 @@ class HardCB:
 		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
 		f.write("package Coefficients;\r\n")
 		f.write("\tlocalparam N = " + str(self.N) + ";\n")
-		self.WriteVerilog1D(f, "Lfr", self.Lf.real.flatten())
-		self.WriteVerilog1D(f, "Lfi", self.Lf.imag.flatten())
-		self.WriteVerilog1D(f, "Lbr", self.Lb.real.flatten())
-		self.WriteVerilog1D(f, "Lbi", self.Lb.imag.flatten())
-		self.WriteVerilog1D(f, "Wfr", self.Wf.real.flatten())
-		self.WriteVerilog1D(f, "Wfi", self.Wf.imag.flatten())
-		self.WriteVerilog1D(f, "Wbr", self.Wb.real.flatten())
-		self.WriteVerilog1D(f, "Wbi", self.Wb.imag.flatten())
+		self.WriteVerilog1D(f, "Lfr", np.array(self.Lf.real.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Lfi", np.array(self.Lf.imag.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Lbr", np.array(self.Lb.real.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Lbi", np.array(self.Lb.imag.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Wfr", np.array(self.Wf.real.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Wfi", np.array(self.Wf.imag.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Wbr", np.array(self.Wb.real.flatten(), np.float32))
+		self.WriteVerilog1D(f, "Wbi", np.array(self.Wb.imag.flatten(), np.float32))
 		self.WriteVerilog2DExtended(f, "Ff", self.Ff, self.Lf, exponent)
 		self.WriteVerilog2DExtended(f, "Fb", self.Fb, self.Lb, exponent)
-		self.WriteVerilog1D(f, "hf", self.hf.flatten())
-		self.WriteVerilog1D(f, "hb", self.hb.flatten())
+		self.WriteVerilog1D(f, "hf", np.array(self.hf.flatten(), np.float32))
+		self.WriteVerilog1D(f, "hb", np.array(self.hb.flatten(), np.float32))
 		f.write("\rendpackage\n`endif")
 		f.write("\n\r")
 		f.close()
