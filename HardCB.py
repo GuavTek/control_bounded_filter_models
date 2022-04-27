@@ -817,8 +817,8 @@ class HardCB:
 
 	def WriteVerilogCoefficients_Fixedpoint(self, fileName, exponent, bias):
 		f = open(fileName + '.sv', 'w')
-		f.write("`ifndef COEFFICIENTS_SV_\n`define COEFFICIENTS_SV_\r\n")
-		f.write("package Coefficients;\r\n")
+		f.write("`ifndef COEFFICIENTS_FX_SV_\n`define COEFFICIENTS_FX_SV_\r\n")
+		f.write("package Coefficients_Fx;\r\n")
 		f.write("\tlocalparam N = " + str(self.N) + ";\n")
 		f.write("\tlocalparam M = " + str(self.M) + ";\n")
 		f.write("\tlocalparam COEFF_BIAS = " + str(bias) + ";\n")
