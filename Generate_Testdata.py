@@ -27,8 +27,8 @@ kappa = -1.0
 OSR = 6                # Oversampling ratio
 
 # Input signal
-amplitude = 0.99
-fs = 2e6
+amplitude = 0.95
+fs = 1.95e6
 shape = 'sine'    # sine / ramp / dc
 
 T = 1.0/f_clk
